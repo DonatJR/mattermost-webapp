@@ -105,80 +105,6 @@
     }
 }
 
-.date-separator,
-.new-separator {
-    height: 2em;
-    margin: 0;
-    position: relative;
-    text-align: center;
-    z-index: 0;
-    pointer-events: none;
-
-    &:before,
-    &:after {
-        content: '';
-        display: none;
-        height: 1em;
-        left: 0;
-        position: absolute;
-        width: 100%;
-    }
-
-    &:before {
-        bottom: 0;
-    }
-
-    &:after {
-        top: 0;
-    }
-
-    &.hovered--after {
-        &:before {
-            background: #f5f5f5;
-            display: block;
-        }
-    }
-
-    &.hovered--before {
-        &:after {
-            background: #f5f5f5;
-            display: block;
-        }
-    }
-
-    .separator__hr {
-        border-color: v(center-channel-color-20);
-        margin: 0;
-        position: relative;
-        top: 1em;
-        z-index: 5;
-    }
-
-    .separator__text {
-        @include border-radius(50px);
-        background: v(center-channel-bg);
-        color: v(center-channel-color);
-        display: inline-block;
-        font-size: 13px;
-        font-weight: 700;
-        line-height: 2em;
-        padding: 0 1em;
-        position: relative;
-        z-index: 5;
-    }
-}
-
-.new-separator {
-    .separator__hr {
-        border-color: #ffaf53;
-    }
-
-    .separator__text {
-        color: #ff8800;
-        font-weight: normal;
-    }
-}
-
 .file-overlay {
     color: $white;
     font-size: em(20px);
@@ -365,10 +291,6 @@
                 @include transition-timing-function(ease-out, step-start);
             }
         }
-
-        &.disabled {
-            display: none;
-        }
     }
 }
 
@@ -391,6 +313,10 @@
 
     &.rhs {
         top: 98px;
+    }
+
+    &.toastAdjustment {
+        top: 50px;
     }
 
     > div {
@@ -637,9 +563,19 @@
         }
     }
 
-    &:hover,
-    &:active {
-        box-shadow: none;
+    .post-action {
+        &:hover,
+        &:active {
+            box-shadow: none;
+
+            .icon--emoji {
+                opacity: 1;
+
+                &.active {
+                    opacity: 1;
+                }
+            }
+        }
     }
 
     &.btn-file__disabled {
@@ -658,14 +594,14 @@
         top: 1px;
         position: relative;
 
+        &.active {
+            opacity: 1;
+        }
+
         svg {
             position: relative;
             top: 1px;
         }
-    }
-
-    .post-action:hover .icon--emoji {
-        @include opacity(.7);
     }
 
     .icon--attachment {
@@ -708,7 +644,7 @@
 
 .post-create-footer {
     font-size: 13px;
-    padding: 3px 0 0;
+    padding: 6px 0 0;
     position: relative;
 
     .help__text {
@@ -846,10 +782,6 @@
         .post__body {
             background: transparent !important;
         }
-    }
-
-    &.post--highlight {
-        background-color: beige;
     }
 
     &.post--hide-controls {
@@ -1395,6 +1327,14 @@
                 height: 24px;
                 top: 0;
                 width: 24px;
+
+                &:hover {
+                    background-color: v(center-channel-color-05);
+                }
+
+                &:active {
+                    background-color: v(center-channel-color-15);
+                }
             }
 
             .comment-icon__container {
@@ -1625,8 +1565,11 @@
             }
 
             li {
-                ul,
-                ol {
+                p {
+                    display: inline;
+                }
+
+                ul {
                     font-size: 1em;
                     margin: 0;
                     padding: 0 0 0 20px;
@@ -1727,13 +1670,10 @@
             .post-reaction__emoji {
                 margin: 0 3px 0 0;
                 max-height: 16px;
+                min-height: 16px;
                 max-width: 16px;
+                min-width: 16px;
                 vertical-align: middle;
-            }
-
-            .post-reaction__count {
-                top: 1px;
-                position: relative;
             }
 
             .post-reaction__add {
@@ -2216,10 +2156,20 @@
 }
 
 .post-list__dynamic {
-    .date-separator, .new-separator {
-        z-index: 1;
-        height: 1px;
-        margin-bottom: 1em;
-        margin-top: -1em;
+    .emoji-picker--active & {
+        pointer-events: none;
     }
+}
+
+@keyframes postHighlight {
+    100% {
+      background: initial;
+    }
+}
+
+.app__body .app__content .post.post--highlight {
+    animation-duration: 1s;
+    animation-name: postHighlight;
+    animation-delay: 5s;
+    animation-fill-mode: forwards;
 }

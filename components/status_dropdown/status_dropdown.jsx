@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import {FormattedMessage} from 'react-intl';
 
-import {UserStatuses, ModalIdentifiers} from 'utils/constants.jsx';
+import {UserStatuses, ModalIdentifiers} from 'utils/constants';
 import {localizeMessage} from 'utils/utils.jsx';
 import ResetStatusModal from 'components/reset_status_modal';
 import StatusIcon from 'components/status_icon.jsx';
@@ -121,7 +121,7 @@ export default class StatusDropdown extends React.Component {
                     {profilePicture}
                     <button
                         className='status style--none'
-                        aria-label={localizeMessage('status_dropdown.menuAriaLabel', 'set status')}
+                        aria-label={localizeMessage('status_dropdown.menuAriaLabel', 'Set a status')}
                     >
                         <StatusIcon
                             status={this.props.status}
@@ -132,7 +132,10 @@ export default class StatusDropdown extends React.Component {
                         {dropdownIcon}
                     </span>
                 </div>
-                <Menu ariaLabel={localizeMessage('status_dropdown.menuAriaLabel', 'set status')}>
+                <Menu
+                    ariaLabel={localizeMessage('status_dropdown.menuAriaLabel', 'Set a status')}
+                    id='statusDropdownMenu'
+                >
                     <Menu.Group>
                         <Menu.ItemAction
                             show={this.isUserOutOfOffice()}
@@ -155,9 +158,9 @@ export default class StatusDropdown extends React.Component {
                         />
                         <Menu.ItemAction
                             onClick={setDnd}
-                            ariaLabel={`${localizeMessage('status_dropdown.set_dnd', 'Do not disturb').toLowerCase()}. ${localizeMessage('status_dropdown.set_dnd.extra', 'Disables Desktop and Push Notifications').toLowerCase()}`}
+                            ariaLabel={`${localizeMessage('status_dropdown.set_dnd', 'Do not disturb').toLowerCase()}. ${localizeMessage('status_dropdown.set_dnd.extra', 'Disables desktop, email and push notifications').toLowerCase()}`}
                             text={localizeMessage('status_dropdown.set_dnd', 'Do not disturb')}
-                            extraText={localizeMessage('status_dropdown.set_dnd.extra', 'Disables Desktop and Push Notifications')}
+                            extraText={localizeMessage('status_dropdown.set_dnd.extra', 'Disables desktop, email and push notifications')}
                         />
                         <Menu.ItemAction
                             onClick={setOffline}

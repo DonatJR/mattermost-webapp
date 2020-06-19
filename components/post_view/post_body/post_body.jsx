@@ -7,7 +7,8 @@ import { Posts } from 'mattermost-redux/constants';
 
 import * as PostUtils from 'utils/post_utils.jsx';
 import * as Utils from 'utils/utils.jsx';
-import DelayedAction from 'utils/delayed_action.jsx';
+import DelayedAction from 'utils/delayed_action';
+import Constants from 'utils/constants.jsx';
 
 import CommentedOn from 'components/post_view/commented_on';
 import FileAttachmentListContainer from 'components/file_attachment_list';
@@ -97,6 +98,22 @@ export default class PostBody extends React.PureComponent {
         this.state = { sending: false };
     }
 
+    static getDerivedStateFromProps(props, state) {
+        if (state.sending && props.post && (props.post.id !== props.post.pending_post_id)) {
+            return {
+                sending: false,
+            };
+        }
+
+        return null;
+    }
+
+    componentDidUpdate() {
+        if (this.state.sending === false) {
+            this.sendingAction.cancel();
+        }
+    }
+
     componentDidMount() {
         const post = this.props.post;
         if (post && post.id === post.pending_post_id) {
@@ -108,14 +125,6 @@ export default class PostBody extends React.PureComponent {
         this.sendingAction.cancel();
     }
 
-    UNSAFE_componentWillReceiveProps(nextProps) { // eslint-disable-line camelcase
-        const post = nextProps.post;
-        if (post && post.id !== post.pending_post_id) {
-            this.sendingAction.cancel();
-            this.setState({ sending: false });
-        }
-    }
-
     render() {
         const post = this.props.post;
         const parentPost = this.props.parentPost;
@@ -123,7 +132,9 @@ export default class PostBody extends React.PureComponent {
         let comment;
         let postClass = '';
         const isEphemeral = Utils.isPostEphemeral(post);
-        if (this.props.isFirstReply && parentPost && !isEphemeral) {
+
+        //We want to show the commented on component even if the post was deleted
+        if (this.props.isFirstReply && parentPost && post.type !== Constants.PostTypes.EPHEMERAL) {
             comment = (
                 <CommentedOn
                     post={parentPost}

@@ -11,7 +11,7 @@ import {isEmail} from 'mattermost-redux/utils/helpers';
 
 import {adminResetMfa, adminResetEmail} from 'actions/admin_actions.jsx';
 
-import {Constants} from 'utils/constants.jsx';
+import {Constants} from 'utils/constants';
 import * as Utils from 'utils/utils.jsx';
 import {t} from 'utils/i18n';
 
@@ -20,9 +20,9 @@ import ResetPasswordModal from 'components/admin_console/reset_password_modal';
 import AdminButtonOutline from 'components/admin_console/admin_button_outline/admin_button_outline';
 import AdminUserCard from 'components/admin_console/admin_user_card/admin_user_card';
 import AdminPanel from 'components/widgets/admin_console/admin_panel';
-import ConfirmModal from 'components/confirm_modal.jsx';
-import SaveButton from 'components/save_button.jsx';
-import FormError from 'components/form_error.jsx';
+import ConfirmModal from 'components/confirm_modal';
+import SaveButton from 'components/save_button';
+import FormError from 'components/form_error';
 import TeamSelectorModal from 'components/team_selector_modal';
 
 import TeamList from 'components/admin_console/system_user_detail/team_list';
@@ -35,6 +35,7 @@ import './system_user_detail.scss';
 export default class SystemUserDetail extends React.PureComponent {
     static propTypes = {
         user: PropTypes.object.isRequired,
+        mfaEnabled: PropTypes.bool.isRequired,
         actions: PropTypes.shape({
             updateUserActive: PropTypes.func.isRequired,
             setNavigationBlocked: PropTypes.func.isRequired,
@@ -46,6 +47,7 @@ export default class SystemUserDetail extends React.PureComponent {
         user: {
             email: null,
         },
+        mfaEnabled: false,
     }
 
     constructor(props) {
@@ -276,11 +278,35 @@ export default class SystemUserDetail extends React.PureComponent {
                     onClick={this.handleResetMfa}
                     className='admin-btn-default'
                 >
-                    {'Remove MFA'}
+                    {Utils.localizeMessage('admin.user_item.resetMfa', 'Remove MFA')}
                 </AdminButtonOutline>
             );
         }
         return null;
+    }
+
+    getAuthenticationText() {
+        const {user, mfaEnabled} = this.props;
+        let authLine;
+
+        if (user.auth_service) {
+            let service;
+            if (user.auth_service === Constants.LDAP_SERVICE || user.auth_service === Constants.SAML_SERVICE) {
+                service = user.auth_service.toUpperCase();
+            } else {
+                service = Utils.toTitleCase(user.auth_service);
+            }
+            authLine = service;
+        } else {
+            authLine = Utils.localizeMessage('admin.userManagement.userDetail.email', 'Email');
+        }
+        if (mfaEnabled) {
+            if (user.mfa_active) {
+                authLine += ', ';
+                authLine += Utils.localizeMessage('admin.userManagement.userDetail.mfa', 'MFA');
+            }
+        }
+        return authLine;
     }
 
     render() {
@@ -366,7 +392,7 @@ export default class SystemUserDetail extends React.PureComponent {
                                     <span className='SystemUserDetail__field-label'>{Utils.localizeMessage('admin.userManagement.userDetail.authenticationMethod', 'Authentication Method')}</span>
                                     <div className='SystemUserDetail__field-text'>
                                         <SheidOutlineIcon className='SystemUserDetail__field-icon'/>
-                                        <span className='SystemUserDetail__field-text'>{user.mfa_active ? 'MFA' : 'Email'}</span>
+                                        <span className='SystemUserDetail__field-text'>{this.getAuthenticationText()}</span>
                                     </div>
 
                                     <span className='SystemUserDetail__field-label'>{Utils.localizeMessage('admin.userManagement.userDetail.role', 'Role')}</span>
@@ -379,7 +405,7 @@ export default class SystemUserDetail extends React.PureComponent {
                                         onClick={this.doPasswordReset}
                                         className='admin-btn-default'
                                     >
-                                        {'Reset Password'}
+                                        {Utils.localizeMessage('admin.user_item.resetPwd', 'Reset Password')}
                                     </AdminButtonOutline>
                                     {this.renderActivateDeactivate()}
                                     {this.renderRemoveMFA()}

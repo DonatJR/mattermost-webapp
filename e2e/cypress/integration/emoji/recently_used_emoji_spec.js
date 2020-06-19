@@ -2,7 +2,7 @@
 // See LICENSE.txt for license information.
 
 // ***************************************************************
-// - [#] indicates a test step (e.g. 1. Go to a page)
+// - [#] indicates a test step (e.g. # Go to a page)
 // - [*] indicates an assertion (e.g. * Check the title)
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
@@ -13,7 +13,7 @@ describe('Recent Emoji', () => {
     before(() => {
         // # Login and go to /
         cy.apiLogin();
-        cy.visit('/');
+        cy.visit('/ad-1/channels/town-square');
     });
 
     it('M14014 Recently used emojis are shown 1st', async () => {

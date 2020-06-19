@@ -4,9 +4,9 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import Constants from 'utils/constants.jsx';
+import Constants from 'utils/constants';
 import DeleteModalTrigger from 'components/delete_modal_trigger.jsx';
-import ConfirmModal from 'components/confirm_modal.jsx';
+import ConfirmModal from 'components/confirm_modal';
 
 describe('components/DeleteModalTrigger', () => {
     test('should throw error when trying to construct DeleteModalTrigger', () => {

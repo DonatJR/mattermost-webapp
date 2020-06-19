@@ -6,8 +6,8 @@ import React from 'react';
 import truncate from 'lodash/truncate';
 
 import {isUrlSafe} from 'utils/url';
-import {handleFormattedTextClick} from 'utils/utils';
 import {Constants} from 'utils/constants';
+import * as Utils from 'utils/utils';
 
 import ExternalImage from 'components/external_image';
 import Markdown from 'components/markdown';
@@ -44,6 +44,8 @@ export default class MessageAttachment extends React.PureComponent {
         actions: PropTypes.shape({
             doPostActionWithCookie: PropTypes.func.isRequired,
         }).isRequired,
+
+        currentRelativeTeamUrl: PropTypes.string.isRequired,
     }
 
     constructor(props) {
@@ -115,6 +117,7 @@ export default class MessageAttachment extends React.PureComponent {
                         key={action.id}
                         postId={this.props.postId}
                         action={action}
+                        disabled={action.disabled}
                     />
                 );
                 break;
@@ -124,6 +127,7 @@ export default class MessageAttachment extends React.PureComponent {
                     <ActionButton
                         key={action.id}
                         action={action}
+                        disabled={action.disabled}
                         handleAction={this.handleAction}
                     />
                 );
@@ -237,6 +241,8 @@ export default class MessageAttachment extends React.PureComponent {
             </div>
         );
     };
+
+    handleFormattedTextClick = (e) => Utils.handleFormattedTextClick(e, this.props.currentRelativeTeamUrl);
 
     render() {
         const {attachment, options} = this.props;
@@ -445,7 +451,7 @@ export default class MessageAttachment extends React.PureComponent {
                         <div>
                             <div
                                 className={thumb ? 'attachment__body' : 'attachment__body attachment__body--no_thumb'}
-                                onClick={handleFormattedTextClick}
+                                onClick={this.handleFormattedTextClick}
                             >
                                 {attachmentText}
                                 {image}

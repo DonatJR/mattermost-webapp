@@ -4,6 +4,7 @@
 import {combineReducers} from 'redux';
 
 import admin from './admin';
+import announcementBar from './announcement_bar';
 import browser from './browser';
 import channel from './channel';
 import rhs from './rhs';
@@ -17,9 +18,12 @@ import notice from './notice';
 import system from './system';
 import channelSelectorModal from './channel_selector_modal';
 import settings from './settings';
+import marketplace from './marketplace';
+import channelSidebar from './channel_sidebar';
 
 export default combineReducers({
     admin,
+    announcementBar,
     browser,
     channel,
     rhs,
@@ -33,4 +37,6 @@ export default combineReducers({
     system,
     channelSelectorModal,
     settings,
+    marketplace,
+    channelSidebar,
 });

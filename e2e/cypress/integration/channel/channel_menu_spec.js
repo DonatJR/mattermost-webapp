@@ -35,7 +35,7 @@ describe('Channel header menu', () => {
         let channel;
 
         // # Go to "/"
-        cy.visit('/');
+        cy.visit('/ad-1/channels/town-square');
 
         cy.getCurrentTeamId().then((teamId) => {
             // # Create new test channel
@@ -52,10 +52,10 @@ describe('Channel header menu', () => {
                 cy.get('#channelHeaderTitle').click();
 
                 // * The dropdown menu of the channel header should be visible;
-                cy.get('#channelHeaderDropdownMenu').should('be.visible');
+                cy.get('.Menu__content').should('be.visible');
 
                 // * The dropdown menu of the channel header should have 3 dividers;
-                cy.get('#channelHeaderDropdownMenu').find('.menu-divider:visible').should('have.lengthOf', 3);
+                cy.get('.Menu__content').find('.menu-divider:visible').should('have.lengthOf', 3);
 
                 // # Demote the user to guest
                 cy.get('@newuser').then((user) => {
@@ -63,7 +63,7 @@ describe('Channel header menu', () => {
                 });
 
                 // * The dropdown menu of the channel header should have 2 dividers because some options have disappeared;
-                cy.get('#channelHeaderDropdownMenu').find('.menu-divider:visible').should('have.lengthOf', 2);
+                cy.get('.Menu__content').find('.menu-divider:visible').should('have.lengthOf', 2);
 
                 // # Promote the guest to user again
                 cy.get('@newuser').then((user) => {
@@ -71,7 +71,39 @@ describe('Channel header menu', () => {
                 });
 
                 // * The dropdown menu of the channel header should have 3 dividers again;
-                cy.get('#channelHeaderDropdownMenu').find('.menu-divider:visible').should('have.lengthOf', 3);
+                cy.get('.Menu__content').find('.menu-divider:visible').should('have.lengthOf', 3);
+            });
+        });
+    });
+
+    it('MM-24590 should leave channel successfully', () => {
+        let channel;
+
+        // # Go to "/"
+        cy.visit('/ad-1/channels/town-square');
+
+        cy.getCurrentTeamId().then((teamId) => {
+            // # Create new test channel
+            cy.apiCreateChannel(teamId, 'channel-test-leave', 'Channel Test Leave').then((res) => {
+                channel = res.body;
+
+                // # Select channel on the left hand side
+                cy.get(`#sidebarItem_${channel.name}`).click();
+
+                // * Channel's display name should be visible at the top of the center pane
+                cy.get('#channelHeaderTitle').should('contain', channel.display_name);
+
+                // # Then click it to access the drop-down menu
+                cy.get('#channelHeaderTitle').click();
+
+                // * The dropdown menu of the channel header should be visible;
+                cy.get('.Menu__content').should('be.visible');
+
+                // # Click the "Leave Channel" option
+                cy.get('#channelLeaveChannel').click();
+
+                // * Should now be in Town Square
+                cy.get('#channelHeaderInfo').should('be.visible').and('contain', 'Town Square');
             });
         });
     });

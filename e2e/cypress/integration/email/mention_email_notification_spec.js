@@ -2,7 +2,7 @@
 // See LICENSE.txt for license information.
 
 // ***************************************************************
-// - [#] indicates a test step (e.g. 1. Go to a page)
+// - [#] indicates a test step (e.g. # Go to a page)
 // - [*] indicates an assertion (e.g. * Check the title)
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
@@ -18,12 +18,12 @@ describe('Email notification', () => {
     let mentionedUser;
 
     before(() => {
+        cy.apiUpdateConfig({EmailSettings: {SendEmailNotifications: true}});
         cy.apiGetConfig().then((response) => {
             config = response.body;
         });
 
-        cy.visit('/');
-        cy.url().should('include', '/channels/town-square');
+        cy.visit('/ad-1/channels/town-square');
 
         cy.getCurrentTeamId().then((teamId) => {
             cy.createNewUser({}, [teamId]).then((user) => {
@@ -35,6 +35,7 @@ describe('Email notification', () => {
     it('post a message that mentions a user', () => {
         // # Login as user-1 and visit town-square channel
         cy.apiLogin('user-1');
+        cy.apiSaveTeammateNameDisplayPreference('username');
         cy.visit('/ad-1/channels/town-square');
 
         // # Post a message mentioning the new user
@@ -55,10 +56,11 @@ describe('Email notification', () => {
             const bodyText = response.data.body.text.split('\n');
 
             const permalink = bodyText[9].match(reUrl)[0];
-            const permalinkPostId = permalink.split('/')[5];
+            const permalinkPostId = permalink.split('/')[6];
 
-            // # Visit permalink (e.g. click on email link)
+            // # Visit permalink (e.g. click on email link), view in browser to proceed
             cy.visit(permalink);
+            cy.findByText('View in Browser').click();
 
             const postText = `#postMessageText_${permalinkPostId}`;
             cy.get(postText).should('have.text', text);

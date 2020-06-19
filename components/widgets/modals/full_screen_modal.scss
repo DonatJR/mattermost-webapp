@@ -5,14 +5,20 @@
     width: 100%;
     height: 100%;
     background: var(--center-channel-bg);
-    z-index: 1030;
+    z-index: 1030 !important;
     overflow: auto;
 
-    .close-x {
+    .close-x, .back {
+        border: 0;
+        background: none;
+        padding: 0;
         position: fixed;
         top: 48px;
-        right: 48px;
+        height: 40px;
+        width: 40px;
         cursor: pointer;
+        z-index: 9;
+
         svg {
             fill: var(--center-channel-color-90);
             padding: 4px;
@@ -23,6 +29,14 @@
                 background: var(--button-bg-10);
             }
         }
+    }
+
+    .close-x {
+        right: 48px;
+    }
+
+    .back {
+        left: 48px;
     }
 
     // Animation
@@ -39,5 +53,21 @@
     &-exit-active {
         opacity: 0;
         transition: opacity 100ms;
+    }
+}
+
+.FullScreenModal.FullScreenModal--compact {
+    .back {
+        top: 8px;
+        left: 16px;
+    }
+
+    .close-x {
+        top: 8px;
+        right: 16px;
+    }
+
+    .close-x, .back {
+        position: absolute;
     }
 }

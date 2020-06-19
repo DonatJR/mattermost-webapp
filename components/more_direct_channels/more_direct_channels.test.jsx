@@ -4,7 +4,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import MoreDirectChannels from 'components/more_direct_channels/more_direct_channels.jsx';
+import MoreDirectChannels from 'components/more_direct_channels/more_direct_channels';
 
 describe('components/MoreDirectChannels', () => {
     function emptyFunction() {} //eslint-disable-line no-empty-function
@@ -14,10 +14,40 @@ describe('components/MoreDirectChannels', () => {
         currentTeamId: 'team_id',
         currentTeamName: 'team_name',
         searchTerm: '',
-        users: [{id: 'user_id_1', delete_at: 0}, {id: 'user_id_2', delete_at: 0}, {id: 'user_id_3', delete_at: 0}],
+        users: [
+            {
+                id: 'user_id_1',
+                label: 'user_id_1',
+                value: 'user_id_1',
+                delete_at: 0,
+            },
+            {
+                id: 'user_id_2',
+                label: 'user_id_2',
+                value: 'user_id_2',
+                delete_at: 0,
+            },
+            {
+                id: 'user_id_3',
+                label: 'user_id_3',
+                value: 'user_id_3',
+                delete_at: 0,
+            }],
+        myDirectChannels: [],
         groupChannels: [],
         statuses: {user_id_1: 'online', user_id_2: 'away'},
-        currentChannelMembers: [{id: 'user_id_1'}, {id: 'user_id_2'}],
+        currentChannelMembers: [
+            {
+                id: 'user_id_1',
+                label: 'user_id_1',
+                value: 'user_id_1',
+            },
+            {
+                id: 'user_id_2',
+                label: 'user_id_2',
+                value: 'user_id_2',
+            },
+        ],
         isExistingChannel: false,
         restrictDirectMessage: 'any',
         onModalDismissed: emptyFunction,
@@ -113,9 +143,21 @@ describe('components/MoreDirectChannels', () => {
         const props = {...baseProps};
         const wrapper = shallow(<MoreDirectChannels {...props}/>);
 
-        wrapper.setState({values: [{id: 'user_id_1'}]});
-        wrapper.instance().handleDelete([{id: 'user_id_2'}]);
-        expect(wrapper.state('values')).toEqual([{id: 'user_id_2'}]);
+        const user1 = {
+            id: 'user_id_1',
+            label: 'user_id_1',
+            value: 'user_id_1',
+        };
+
+        const user2 = {
+            id: 'user_id_1',
+            label: 'user_id_1',
+            value: 'user_id_1',
+        };
+
+        wrapper.setState({values: [user1]});
+        wrapper.instance().handleDelete([user2]);
+        expect(wrapper.state('values')).toEqual([user2]);
     });
 
     test('should match renderOption snapshot', () => {
@@ -160,7 +202,12 @@ describe('components/MoreDirectChannels', () => {
     });
 
     test('should open a DM', (done) => {
-        const props = {...baseProps, currentChannelMembers: [{id: 'user_id_1'}]};
+        const user = {
+            id: 'user_id_1',
+            label: 'user_label_1',
+            value: 'user_value_1',
+        };
+        const props = {...baseProps, currentChannelMembers: [user]};
         const wrapper = shallow(<MoreDirectChannels {...props}/>);
         const handleHide = jest.fn();
         const exitToChannel = null;
@@ -196,5 +243,49 @@ describe('components/MoreDirectChannels', () => {
             expect(wrapper.instance().exitToChannel).toEqual(`/${baseProps.currentTeamName}/channels/group`);
             done();
         });
+    });
+
+    test('should exclude deleted users if there is not direct channel between users', () => {
+        const users = [
+            {
+                id: 'user_id_1',
+                label: 'user_id_1',
+                value: 'user_id_1',
+                delete_at: 0,
+            },
+            {
+                id: 'user_id_2',
+                label: 'user_id_2',
+                value: 'user_id_2',
+                delete_at: 0,
+            },
+            {
+                id: 'deleted_user_1',
+                label: 'deleted_user_id_1',
+                value: 'deleted_user_id_1',
+                delete_at: 1,
+            },
+            {
+                id: 'deleted_user_2',
+                label: 'deleted_user_id_2',
+                value: 'deleted_user_id_2',
+                delete_at: 1,
+            },
+            {
+                id: 'deleted_user_3',
+                label: 'deleted_user_id_3',
+                value: 'deleted_user_id_3',
+                delete_at: 1,
+            },
+        ];
+        const myDirectChannels = [
+            {name: 'deleted_user_1__current_user_id'},
+            {name: 'not_existent_user_1__current_user_id'},
+            {name: 'current_user_id__deleted_user_2'},
+        ];
+        const currentChannelMembers = [];
+        const props = {...baseProps, users, myDirectChannels, currentChannelMembers};
+        const wrapper = shallow(<MoreDirectChannels {...props}/>);
+        expect(wrapper).toMatchSnapshot();
     });
 });

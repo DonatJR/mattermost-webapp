@@ -1,7 +1,8 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
+
 // ***************************************************************
-// - [#] indicates a test step (e.g. 1. Go to a page)
+// - [#] indicates a test step (e.g. # Go to a page)
 // - [*] indicates an assertion (e.g. * Check the title)
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
@@ -94,8 +95,12 @@ describe('Autocomplete', () => {
     let team;
 
     before(() => {
+        // * Check if server has license for Elasticsearch
+        cy.requireLicenseForFeature('Elasticsearch');
+
         // # Login as admin
         cy.apiLogin('sysadmin');
+        cy.apiSaveTeammateNameDisplayPreference('username');
 
         // # Create new team for tests
         cy.apiCreateTeam(`elastic-${timestamp}`, `elastic-${timestamp}`).then((response) => {
@@ -134,7 +139,7 @@ describe('Autocomplete', () => {
                     },
                     verifySuggestion: (...expectedtestUsers) => {
                         expectedtestUsers.forEach((user) => {
-                            cy.getByTestId(`mentionSuggestion_${user.username}`, {exact: false}).within((name) => {
+                            cy.findByTestId(`mentionSuggestion_${user.username}`, {exact: false}).within((name) => {
                                 cy.wrap(name).find('.mention--align').should('have.text', `@${user.username}`);
                                 cy.wrap(name).find('.mention__fullname').should('have.text', ` - ${user.firstName} ${user.lastName} (${user.nickname})`);
                             });
@@ -258,7 +263,7 @@ describe('Autocomplete', () => {
                     },
                     verifySuggestion: (...expectedtestUsers) => {
                         expectedtestUsers.forEach((user) => {
-                            cy.getByTestId(user.username).
+                            cy.findByTestId(user.username).
                                 should('be.visible').
                                 and('have.text', `@${user.username} - ${user.firstName} ${user.lastName} (${user.nickname})`);
                         });
@@ -404,14 +409,14 @@ describe('Autocomplete', () => {
                     type('@odinson');
 
                 // * Thor should be a channel member
-                cy.getByTestId(thor.username, {exact: false}).within((name) => {
+                cy.findByTestId(thor.username, {exact: false}).within((name) => {
                     cy.wrap(name).prev('.suggestion-list__divider').should('have.text', 'Channel Members');
                     cy.wrap(name).find('.mention--align').should('have.text', `@${thor.username}`);
                     cy.wrap(name).find('.mention__fullname').should('have.text', ` - ${thor.firstName} ${thor.lastName} (${thor.nickname})`);
                 });
 
                 // * Loki should NOT be a channel member
-                cy.getByTestId(loki.username, {exact: false}).within((name) => {
+                cy.findByTestId(loki.username, {exact: false}).within((name) => {
                     cy.wrap(name).prev('.suggestion-list__divider').should('have.text', 'Not in Channel');
                     cy.wrap(name).find('.mention--align').should('have.text', `@${loki.username}`);
                     cy.wrap(name).find('.mention__fullname').should('have.text', ` - ${loki.firstName} ${loki.lastName} (${loki.nickname})`);
@@ -483,7 +488,7 @@ describe('Autocomplete', () => {
                     },
                     verifySuggestion: (...expectedtestUsers) => {
                         expectedtestUsers.forEach((user) => {
-                            cy.getByTestId(`mentionSuggestion_${user.username}`, {exact: false}).within((name) => {
+                            cy.findByTestId(`mentionSuggestion_${user.username}`, {exact: false}).within((name) => {
                                 cy.wrap(name).find('.mention--align').should('have.text', `@${user.username}`);
                                 cy.wrap(name).find('.mention__fullname').should('have.text', ` - ${user.firstName} ${user.lastName} (${user.nickname})`);
                             });
@@ -607,7 +612,7 @@ describe('Autocomplete', () => {
                     },
                     verifySuggestion: (...expectedtestUsers) => {
                         expectedtestUsers.forEach((user) => {
-                            cy.getByTestId(user.username).
+                            cy.findByTestId(user.username).
                                 should('be.visible').
                                 and('have.text', `@${user.username} - ${user.firstName} ${user.lastName} (${user.nickname})`);
                         });
@@ -753,14 +758,14 @@ describe('Autocomplete', () => {
                     type('@odinson');
 
                 // * Thor should be a channel member
-                cy.getByTestId(thor.username, {exact: false}).within((name) => {
+                cy.findByTestId(thor.username, {exact: false}).within((name) => {
                     cy.wrap(name).prev('.suggestion-list__divider').should('have.text', 'Channel Members');
                     cy.wrap(name).find('.mention--align').should('have.text', `@${thor.username}`);
                     cy.wrap(name).find('.mention__fullname').should('have.text', ` - ${thor.firstName} ${thor.lastName} (${thor.nickname})`);
                 });
 
                 // * Loki should NOT be a channel member
-                cy.getByTestId(loki.username, {exact: false}).within((name) => {
+                cy.findByTestId(loki.username, {exact: false}).within((name) => {
                     cy.wrap(name).prev('.suggestion-list__divider').should('have.text', 'Not in Channel');
                     cy.wrap(name).find('.mention--align').should('have.text', `@${loki.username}`);
                     cy.wrap(name).find('.mention__fullname').should('have.text', ` - ${loki.firstName} ${loki.lastName} (${loki.nickname})`);

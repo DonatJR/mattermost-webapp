@@ -5,7 +5,7 @@ import XRegExp from 'xregexp';
 
 import {getSuggestionsSplitBy, getSuggestionsSplitByMultiple} from 'mattermost-redux/utils/user_utils';
 
-import {Constants} from 'utils/constants.jsx';
+import {Constants} from 'utils/constants';
 
 import Provider from '../provider.jsx';
 
@@ -25,16 +25,17 @@ export default class AtMentionProvider extends Provider {
 
     // setProps gives the provider additional context for matching pretexts. Ideally this would
     // just be something akin to a connected component with access to the store itself.
-    setProps({currentUserId, profilesInChannel, profilesNotInChannel, autocompleteUsersInChannel}) {
+    setProps({currentUserId, profilesInChannel, profilesNotInChannel, autocompleteUsersInChannel, useChannelMentions}) {
         this.currentUserId = currentUserId;
         this.profilesInChannel = profilesInChannel;
         this.profilesNotInChannel = profilesNotInChannel;
         this.autocompleteUsersInChannel = autocompleteUsersInChannel;
+        this.useChannelMentions = useChannelMentions;
     }
 
     // specialMentions matches one of @here, @channel or @all, unless using /msg.
     specialMentions() {
-        if (this.latestPrefix.startsWith('/msg')) {
+        if (this.latestPrefix.startsWith('/msg') || !this.useChannelMentions) {
             return [];
         }
 
@@ -62,6 +63,7 @@ export default class AtMentionProvider extends Provider {
             const suggestions = getSuggestionsSplitBy(property.toLowerCase(), ' ');
             profileSuggestions.push(...suggestions);
         });
+        profileSuggestions.push(profile.first_name.toLowerCase() + ' ' + profile.last_name.toLowerCase());
 
         return profileSuggestions;
     }
@@ -69,10 +71,6 @@ export default class AtMentionProvider extends Provider {
     // filterProfile constrains profiles to those matching the latest prefix.
     filterProfile(profile) {
         if (!profile) {
-            return false;
-        }
-
-        if (profile.id === this.currentUserId) {
             return false;
         }
 
@@ -86,10 +84,7 @@ export default class AtMentionProvider extends Provider {
     localMembers() {
         const localMembers = this.profilesInChannel.
             filter((profile) => this.filterProfile(profile)).
-            map((profile) => ({
-                type: Constants.MENTION_MEMBERS,
-                ...profile,
-            })).
+            map((profile) => this.createFromProfile(profile, Constants.MENTION_MEMBERS)).
             sort((a, b) => a.username.localeCompare(b.username)).
             splice(0, 25);
 
@@ -104,10 +99,7 @@ export default class AtMentionProvider extends Provider {
 
         return (this.data.users || []).
             filter((profile) => this.filterProfile(profile)).
-            map((profile) => ({
-                type: Constants.MENTION_MEMBERS,
-                ...profile,
-            }));
+            map((profile) => this.createFromProfile(profile, Constants.MENTION_MEMBERS));
     }
 
     // remoteNonMembers matches users listed as not in the channel by the server.
@@ -137,12 +129,29 @@ export default class AtMentionProvider extends Provider {
 
         const remoteMembers = this.remoteMembers().filter((item) => !localUserIds[item.id]);
 
-        // Combine the local and remote members, sorting to mix the results together.
-        const localAndRemoteMembers = localMembers.concat(remoteMembers).sort((a, b) =>
-            a.username.localeCompare(b.username)
-        );
+        // comparator which prioritises users with usernames starting with search term
+        const orderUsers = (a, b) => {
+            const aStartsWith = a.username.startsWith(this.latestPrefix);
+            const bStartsWith = b.username.startsWith(this.latestPrefix);
 
-        const remoteNonMembers = this.remoteNonMembers().filter((item) => !localUserIds[item.id]);
+            if (aStartsWith && bStartsWith) {
+                return a.username.localeCompare(b.username);
+            }
+            if (aStartsWith) {
+                return -1;
+            }
+            if (bStartsWith) {
+                return 1;
+            }
+            return a.username.localeCompare(b.username);
+        };
+
+        // Combine the local and remote members, sorting to mix the results together.
+        const localAndRemoteMembers = localMembers.concat(remoteMembers).sort(orderUsers);
+
+        const remoteNonMembers = this.remoteNonMembers().
+            filter((item) => !localUserIds[item.id]).
+            sort(orderUsers);
 
         return localAndRemoteMembers.concat(specialMentions).concat(remoteNonMembers);
     }
@@ -165,7 +174,7 @@ export default class AtMentionProvider extends Provider {
     }
 
     handlePretextChanged(pretext, resultCallback) {
-        const captured = XRegExp.cache('(?:^|\\W)@([\\pL\\d\\-_.]*)$', 'i').exec(pretext.toLowerCase());
+        const captured = XRegExp.cache('(?:^|\\W)@([\\pL\\d\\-_. ]*)$', 'i').exec(pretext.toLowerCase());
         if (!captured) {
             return false;
         }
@@ -204,5 +213,20 @@ export default class AtMentionProvider extends Provider {
         });
 
         return true;
+    }
+
+    createFromProfile(profile, type) {
+        if (profile.id === this.currentUserId) {
+            return {
+                type,
+                ...profile,
+                isCurrentUser: true,
+            };
+        }
+
+        return {
+            type,
+            ...profile,
+        };
     }
 }

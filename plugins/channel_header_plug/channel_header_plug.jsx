@@ -5,10 +5,14 @@
 
 import PropTypes from 'prop-types';
 import React from 'react';
-import {Dropdown} from 'react-bootstrap';
+import {Dropdown, Tooltip} from 'react-bootstrap';
 import {RootCloseWrapper} from 'react-overlays';
+import {FormattedMessage} from 'react-intl';
 
 import HeaderIconWrapper from 'components/channel_header/components/header_icon_wrapper';
+import PluginChannelHeaderIcon from '../../components/widgets/icons/plugin_channel_header_icon';
+import {Constants} from 'utils/constants';
+import OverlayTrigger from 'components/overlay_trigger';
 
 class CustomMenu extends React.PureComponent {
     static propTypes = {
@@ -68,7 +72,7 @@ class CustomToggle extends React.PureComponent {
         return (
             <button
                 id='pluginChannelHeaderButtonDropdown'
-                className={'channel-header__icon style--none' + activeClass}
+                className={'wide channel-header__icon style--none' + activeClass}
                 type='button'
                 onClick={this.handleClick}
             >
@@ -149,7 +153,6 @@ export default class ChannelHeaderPlug extends React.PureComponent {
         return (
             <div className='flex-child'>
                 <Dropdown
-                    ref='dropdown'
                     id='channelHeaderPlugDropdown'
                     onToggle={this.toggleDropdown}
                     onSelect={this.onSelect}
@@ -159,7 +162,34 @@ export default class ChannelHeaderPlug extends React.PureComponent {
                         dropdownOpen={this.state.dropdownOpen}
                         bsRole='toggle'
                     >
-                        <span className='fa fa-ellipsis-h icon__ellipsis'/>
+                        <OverlayTrigger
+                            delayShow={Constants.OVERLAY_TIME_DELAY}
+                            placement='bottom'
+                            overlay={this.state.dropdownOpen ? <></> : (
+                                <Tooltip id='removeIcon'>
+                                    <div aria-hidden={true}>
+                                        <FormattedMessage
+                                            id='generic_icons.plugins'
+                                            defaultMessage='Plugins'
+                                        />
+                                    </div>
+                                </Tooltip>
+                            )}
+                        >
+                            <div>
+                                <span
+                                    id='pluginCount'
+                                    className='icon__text'
+                                >
+                                    {plugs.length}
+                                </span>
+                                <PluginChannelHeaderIcon
+                                    id='pluginChannelHeaderIcon'
+                                    className='icon icon__pluginChannelHeader'
+                                    aria-hidden='true'
+                                />
+                            </div>
+                        </OverlayTrigger>
                     </CustomToggle>
                     <CustomMenu
                         bsRole='menu'

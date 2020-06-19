@@ -1,16 +1,16 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
+import {shallow} from 'enzyme';
 import React from 'react';
 import thunk from 'redux-thunk';
 import configureStore from 'redux-mock-store';
 
 import {getTeam} from 'mattermost-redux/selectors/entities/teams';
 
-import {ErrorPageTypes} from 'utils/constants.jsx';
+import {ErrorPageTypes} from 'utils/constants';
 import {browserHistory} from 'utils/browser_history';
 import LocalStorageStore from 'stores/local_storage_store';
-import {shallowWithIntl} from 'tests/helpers/intl-test-helper.jsx';
 import {redirect} from 'components/permalink_redirector/actions';
 import PermalinkRedirector from 'components/permalink_redirector/permalink_redirector.jsx';
 
@@ -50,7 +50,7 @@ describe('components/PermalinkRedirector', () => {
             ...baseProps,
             url: 'pl/post_id',
         };
-        shallowWithIntl(
+        shallow(
             <PermalinkRedirector {...props}/>
         );
 
@@ -63,7 +63,20 @@ describe('components/PermalinkRedirector', () => {
             ...baseProps,
             url: '/_redirect/integrations',
         };
-        shallowWithIntl(
+        shallow(
+            <PermalinkRedirector {...props}/>
+        );
+
+        expect(baseProps.actions.redirect).toHaveBeenCalledWith(props.url, props.params);
+        expect(baseProps.actions.redirect).toHaveBeenCalledTimes(1);
+    });
+
+    test('calls redirect for integrations/bots', async () => {
+        const props = {
+            ...baseProps,
+            url: '/_redirect/integrations/bots',
+        };
+        shallow(
             <PermalinkRedirector {...props}/>
         );
 

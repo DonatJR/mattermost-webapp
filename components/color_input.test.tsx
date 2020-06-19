@@ -2,7 +2,7 @@
 // See LICENSE.txt for license information.
 
 import React from 'react';
-import {shallow} from 'enzyme';
+import {shallow, ShallowWrapper} from 'enzyme';
 
 import ColorInput from 'components/color_input';
 
@@ -77,7 +77,7 @@ describe('components/ColorInput', () => {
 
     test('should have called onChange prop', () => {
         const onChange = jest.fn();
-        const wrapper = shallow(
+        const wrapper: ShallowWrapper<any, any, ColorInput> = shallow(
             <ColorInput
                 color='#ffffff'
                 id='sidebarBg'
@@ -85,8 +85,9 @@ describe('components/ColorInput', () => {
             />
         );
 
-        const newColorData = {hex: '#ccc'};
-        wrapper.instance().handleChange(newColorData);
+        const newColorData: any = {hex: '#ccc'};
+
+        wrapper.instance().handleColorChange(newColorData);
 
         expect(onChange).toHaveBeenCalledTimes(1);
         expect(onChange).toHaveBeenCalledWith(newColorData.hex);

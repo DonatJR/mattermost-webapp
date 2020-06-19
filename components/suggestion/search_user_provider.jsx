@@ -3,7 +3,6 @@
 
 import React from 'react';
 
-import {autocompleteUsersInTeam} from 'actions/user_actions.jsx';
 import * as Utils from 'utils/utils.jsx';
 import BotBadge from 'components/widgets/badges/bot_badge';
 import SelectIcon from 'components/widgets/icons/fa_select_icon';
@@ -35,14 +34,18 @@ class SearchUserSuggestion extends Suggestion {
         return (
             <div
                 className={className}
+                ref={(node) => {
+                    this.node = node;
+                }}
                 onClick={this.handleClick}
+                onMouseMove={this.handleMouseMove}
                 {...Suggestion.baseProps}
             >
                 <SelectIcon/>
                 <Avatar
                     size='xs'
                     username={username}
-                    url={Utils.imageURLForUser(item)}
+                    url={Utils.imageURLForUser(item.id, item.last_picture_update)}
                 />
                 <div className='mention--align'>
                     <span>
@@ -63,34 +66,43 @@ class SearchUserSuggestion extends Suggestion {
 }
 
 export default class SearchUserProvider extends Provider {
+    constructor(userSearchFunc) {
+        super();
+        this.autocompleteUsersInTeam = userSearchFunc;
+    }
+
     handlePretextChanged(pretext, resultsCallback) {
         const captured = (/\bfrom:\s*(\S*)$/i).exec(pretext.toLowerCase());
-        if (captured) {
-            const usernamePrefix = captured[1];
 
-            this.startNewRequest(usernamePrefix);
-
-            autocompleteUsersInTeam(
-                usernamePrefix,
-                (data) => {
-                    if (this.shouldCancelDispatch(usernamePrefix)) {
-                        return;
-                    }
-
-                    const users = Object.assign([], data.users);
-                    const mentions = users.map((user) => user.username);
-
-                    resultsCallback({
-                        matchedPretext: usernamePrefix,
-                        terms: mentions,
-                        items: users,
-                        component: SearchUserSuggestion,
-                    });
-                }
-            );
-        }
+        this.doAutocomplete(captured, resultsCallback);
 
         return Boolean(captured);
+    }
+
+    async doAutocomplete(captured, resultsCallback) {
+        if (!captured) {
+            return;
+        }
+
+        const usernamePrefix = captured[1];
+
+        this.startNewRequest(usernamePrefix);
+
+        const data = await this.autocompleteUsersInTeam(usernamePrefix);
+
+        if (this.shouldCancelDispatch(usernamePrefix)) {
+            return;
+        }
+
+        const users = Object.assign([], data.users);
+        const mentions = users.map((user) => user.username);
+
+        resultsCallback({
+            matchedPretext: usernamePrefix,
+            terms: mentions,
+            items: users,
+            component: SearchUserSuggestion,
+        });
     }
 
     allowDividers() {

@@ -4,11 +4,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import LoadingScreen from 'components/loading_screen.jsx';
-import {PostRequestTypes} from 'utils/constants.jsx';
+import LoadingScreen from 'components/loading_screen';
+import {PostRequestTypes} from 'utils/constants';
+
 import {getOldestPostId, getLatestPostId} from 'utils/post_utils.jsx';
 
-import VirtPostList from './post_list_virtualized.jsx';
+import VirtPostList from 'components/post_view/post_list_virtualized/post_list_virtualized';
 
 const MAX_NUMBER_OF_AUTO_RETRIES = 3;
 export const MAX_EXTRA_PAGES_LOADED = 10;
@@ -60,6 +61,11 @@ export default class PostList extends React.PureComponent {
 
         latestAriaLabelFunc: PropTypes.func,
 
+        /**
+         * Lastest post id of the current post list, this doesnt include timestamps etc, just actual posts
+         */
+        latestPostId: PropTypes.string,
+
         /*
          * Used for passing down to virt list so it can change the chunk of posts selected
          */
@@ -99,9 +105,11 @@ export default class PostList extends React.PureComponent {
              */
             loadLatestPosts: PropTypes.func.isRequired,
 
-            markChannelAsViewed: PropTypes.func.isRequred,
+            markChannelAsViewed: PropTypes.func.isRequired,
 
-            markChannelAsRead: PropTypes.func.isRequred,
+            markChannelAsRead: PropTypes.func.isRequired,
+            updateNewMessagesAtInChannel: PropTypes.func.isRequired,
+
         }).isRequired,
     }
 
@@ -121,6 +129,7 @@ export default class PostList extends React.PureComponent {
             checkAndSetMobileView: props.actions.checkAndSetMobileView,
             canLoadMorePosts: this.canLoadMorePosts,
             changeUnreadChunkTimeStamp: props.changeUnreadChunkTimeStamp,
+            updateNewMessagesAtInChannel: this.props.actions.updateNewMessagesAtInChannel,
         };
     }
 
@@ -147,7 +156,7 @@ export default class PostList extends React.PureComponent {
         } else if (this.props.isFirstLoad) {
             await this.props.actions.loadUnreads(channelId);
         } else if (this.props.latestPostTimeStamp) {
-            await this.props.actions.syncPostsInChannel(channelId, this.props.latestPostTimeStamp);
+            await this.props.actions.syncPostsInChannel(channelId, this.props.latestPostTimeStamp, false);
         } else {
             await this.props.actions.loadLatestPosts(channelId);
         }
@@ -155,11 +164,12 @@ export default class PostList extends React.PureComponent {
         if (!this.props.focusedPostId) {
             this.markChannelAsReadAndViewed();
         }
-
-        this.setState({
-            loadingOlderPosts: false,
-            loadingNewerPosts: false,
-        });
+        if (this.mounted) {
+            this.setState({
+                loadingOlderPosts: false,
+                loadingNewerPosts: false,
+            });
+        }
     }
 
     callLoadPosts = async (channelId, postId, type) => {
@@ -265,42 +275,39 @@ export default class PostList extends React.PureComponent {
     render() {
         if (!this.props.postListIds) {
             return (
-                <div id='post-list'>
-                    <LoadingScreen
-                        position='absolute'
-                        key='loading'
-                    />
-                </div>
+                <LoadingScreen
+                    position='absolute'
+                    key='loading'
+                />
             );
         }
 
         return (
-            <div id='post-list'>
-                <div
-                    ref='postlist'
-                    className='post-list-holder-by-time'
-                    key={'postlist-' + this.props.channelId}
-                >
-                    <div className='post-list__table'>
-                        <div
-                            id='virtualizedPostListContent'
-                            ref='postListContent'
-                            className='post-list__content'
-                        >
-                            <VirtPostList
-                                loadingNewerPosts={this.state.loadingNewerPosts}
-                                loadingOlderPosts={this.state.loadingOlderPosts}
-                                atOldestPost={this.props.atOldestPost}
-                                atLatestPost={this.props.atLatestPost}
-                                focusedPostId={this.props.focusedPostId}
-                                channelId={this.props.channelId}
-                                autoRetryEnable={this.state.autoRetryEnable}
-                                actions={this.actionsForPostList}
-                                postListIds={this.props.formattedPostIds}
-                                latestPostTimeStamp={this.props.latestPostTimeStamp}
-                                latestAriaLabelFunc={this.props.latestAriaLabelFunc}
-                            />
-                        </div>
+            <div
+                ref='postlist'
+                className='post-list-holder-by-time'
+                key={'postlist-' + this.props.channelId}
+            >
+                <div className='post-list__table'>
+                    <div
+                        id='virtualizedPostListContent'
+                        ref='postListContent'
+                        className='post-list__content'
+                    >
+                        <VirtPostList
+                            loadingNewerPosts={this.state.loadingNewerPosts}
+                            loadingOlderPosts={this.state.loadingOlderPosts}
+                            atOldestPost={this.props.atOldestPost}
+                            atLatestPost={this.props.atLatestPost}
+                            focusedPostId={this.props.focusedPostId}
+                            channelId={this.props.channelId}
+                            autoRetryEnable={this.state.autoRetryEnable}
+                            actions={this.actionsForPostList}
+                            postListIds={this.props.formattedPostIds}
+                            latestPostTimeStamp={this.props.latestPostTimeStamp}
+                            latestAriaLabelFunc={this.props.latestAriaLabelFunc}
+                            latestPostId={this.props.latestPostId}
+                        />
                     </div>
                 </div>
             </div>

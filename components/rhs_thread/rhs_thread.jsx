@@ -8,10 +8,10 @@ import React from 'react';
 import Scrollbars from 'react-custom-scrollbars';
 import {Posts} from 'mattermost-redux/constants';
 
-import Constants from 'utils/constants.jsx';
-import DelayedAction from 'utils/delayed_action.jsx';
+import Constants from 'utils/constants';
+import DelayedAction from 'utils/delayed_action';
 import * as Utils from 'utils/utils.jsx';
-import * as UserAgent from 'utils/user_agent.jsx';
+import * as UserAgent from 'utils/user_agent';
 import CreateComment from 'components/create_comment';
 import DateSeparator from 'components/post_view/date_separator';
 import FloatingTimestamp from 'components/post_view/floating_timestamp';
@@ -28,12 +28,8 @@ export function renderView(props) {
         />);
 }
 
-export function renderThumbHorizontal(props) {
-    return (
-        <div
-            {...props}
-            className='scrollbar--horizontal'
-        />);
+export function renderThumbHorizontal() {
+    return (<div/>);
 }
 
 export function renderThumbVertical(props) {
@@ -59,6 +55,15 @@ export default class RhsThread extends React.Component {
             selectPostCard: PropTypes.func.isRequired,
             getPostThread: PropTypes.func.isRequired,
         }).isRequired,
+        directTeammate: PropTypes.string.isRequired,
+    }
+
+    static getDerivedStateFromProps(props, state) {
+        let updatedState = {selected: props.selected};
+        if (state.selected && props.selected && state.selected.id !== props.selected.id) {
+            updatedState = {...updatedState, openTime: (new Date()).getTime()};
+        }
+        return updatedState;
     }
 
     constructor(props) {
@@ -80,22 +85,13 @@ export default class RhsThread extends React.Component {
     componentDidMount() {
         this.scrollToBottom();
         window.addEventListener('resize', this.handleResize);
+        if (this.props.posts.length < (Utils.getRootPost(this.props.posts).reply_count + 1)) {
+            this.props.actions.getPostThread(this.props.selected.id, true);
+        }
     }
 
     componentWillUnmount() {
         window.removeEventListener('resize', this.handleResize);
-    }
-
-    UNSAFE_componentWillReceiveProps(nextProps) { // eslint-disable-line camelcase
-        if (!this.props.selected || !nextProps.selected) {
-            return;
-        }
-
-        if (this.props.selected.id !== nextProps.selected.id) {
-            this.setState({
-                openTime: (new Date()).getTime(),
-            });
-        }
     }
 
     componentDidUpdate(prevProps) {
@@ -110,7 +106,7 @@ export default class RhsThread extends React.Component {
             return;
         }
 
-        const curLastPost = curPostsArray[curPostsArray.length - 1];
+        const curLastPost = curPostsArray[0];
 
         if (curLastPost.user_id === this.props.currentUserId) {
             this.scrollToBottom();
@@ -245,10 +241,6 @@ export default class RhsThread extends React.Component {
         });
     }
 
-    getSidebarBody = () => {
-        return this.refs.sidebarbody;
-    }
-
     render() {
         if (this.props.posts == null || this.props.selected == null) {
             return (
@@ -257,7 +249,17 @@ export default class RhsThread extends React.Component {
         }
 
         const postsArray = this.filterPosts(this.props.posts, this.props.selected, this.state.openTime);
+        const postsLength = postsArray.length;
         const {selected, currentUserId} = this.props;
+
+        let isRhsRootLastPost = false;
+        let lastRhsCommentPost = '';
+
+        if (postsLength === 0) {
+            isRhsRootLastPost = true;
+        } else {
+            lastRhsCommentPost = postsArray[postsLength - 1];
+        }
 
         let createAt = selected.create_at;
         if (!createAt && this.props.posts.length > 0) {
@@ -267,7 +269,6 @@ export default class RhsThread extends React.Component {
         let previousPostDay = rootPostDay;
 
         const commentsLists = [];
-        const postsLength = postsArray.length;
         let a11yIndex = 1;
         for (let i = 0; i < postsLength; i++) {
             const comPost = postsArray[i];
@@ -299,6 +300,7 @@ export default class RhsThread extends React.Component {
                     previewEnabled={this.props.previewEnabled}
                     handleCardClick={this.handleCardClickPost}
                     a11yIndex={a11yIndex++}
+                    isLastPost={comPost.id === lastRhsCommentPost.id}
                 />
             );
         }
@@ -324,7 +326,6 @@ export default class RhsThread extends React.Component {
                             rootId={selected.id}
                             rootDeleted={selected.state === Posts.POST_DELETED}
                             latestPostId={postsLength > 0 ? postsArray[postsLength - 1].id : selected.id}
-                            getSidebarBody={this.getSidebarBody}
                         />
                     </div>
                 );
@@ -332,7 +333,7 @@ export default class RhsThread extends React.Component {
         }
 
         if (this.props.channel.type === Constants.DM_CHANNEL) {
-            const teammate = Utils.getDirectTeammate(this.props.channel.id);
+            const teammate = this.props.directTeammate;
             if (teammate && teammate.delete_at) {
                 createComment = (
                     <div
@@ -351,7 +352,6 @@ export default class RhsThread extends React.Component {
             <div
                 id='rhsContainer'
                 className='sidebar-right__body'
-                ref='sidebarbody'
             >
                 <FloatingTimestamp
                     isScrolling={this.state.isScrolling}
@@ -392,11 +392,13 @@ export default class RhsThread extends React.Component {
                                 previewEnabled={this.props.previewEnabled}
                                 isBusy={this.state.isBusy}
                                 handleCardClick={this.handleCardClick}
+                                isLastPost={isRhsRootLastPost}
                             />
                             {isFakeDeletedPost && rootPostDay && <DateSeparator date={rootPostDay}/>}
                             <div
                                 ref='rhspostlist'
                                 className='post-right-comments-container'
+                                id='rhsPostList'
                             >
                                 {commentsLists}
                             </div>

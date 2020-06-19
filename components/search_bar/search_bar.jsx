@@ -3,10 +3,9 @@
 
 import PropTypes from 'prop-types';
 import React from 'react';
-import {Popover, OverlayTrigger, Tooltip} from 'react-bootstrap';
 import {FormattedMessage} from 'react-intl';
 
-import Constants from 'utils/constants.jsx';
+import Constants from 'utils/constants';
 import * as Utils from 'utils/utils.jsx';
 import SearchChannelProvider from 'components/suggestion/search_channel_provider.jsx';
 import SearchSuggestionList from 'components/suggestion/search_suggestion_list.jsx';
@@ -20,6 +19,7 @@ import FlagIcon from 'components/widgets/icons/flag_icon';
 import MentionsIcon from 'components/widgets/icons/mentions_icon';
 import SearchIcon from 'components/widgets/icons/search_icon';
 import LoadingSpinner from 'components/widgets/loading/loading_spinner';
+import Popover from 'components/widgets/popover';
 
 const {KeyCodes} = Constants;
 
@@ -31,12 +31,16 @@ export default class SearchBar extends React.Component {
         isFlaggedPosts: PropTypes.bool,
         showMentionFlagBtns: PropTypes.bool,
         isFocus: PropTypes.bool,
+        isSideBarRight: PropTypes.bool,
+        isRhsOpen: PropTypes.bool,
         actions: PropTypes.shape({
             updateSearchTerms: PropTypes.func,
             showSearchResults: PropTypes.func,
             showMentions: PropTypes.func,
             showFlaggedPosts: PropTypes.func,
             closeRightHandSide: PropTypes.func,
+            autocompleteChannelsForSearch: PropTypes.func.isRequired,
+            autocompleteUsersInTeam: PropTypes.func.isRequired,
         }),
     };
 
@@ -45,14 +49,18 @@ export default class SearchBar extends React.Component {
         isFocus: false,
     };
 
-    constructor() {
-        super();
+    constructor(props) {
+        super(props);
 
         this.state = {
             focused: false,
         };
 
-        this.suggestionProviders = [new SearchChannelProvider(), new SearchUserProvider(), new SearchDateProvider()];
+        this.suggestionProviders = [
+            new SearchDateProvider(),
+            new SearchChannelProvider(props.actions.autocompleteChannelsForSearch),
+            new SearchUserProvider(props.actions.autocompleteUsersInTeam),
+        ];
     }
 
     componentDidMount() {
@@ -90,7 +98,7 @@ export default class SearchBar extends React.Component {
         }, 200);
     }
 
-    handleClear = () => {
+    onClear = () => {
         this.props.actions.updateSearchTerms('');
     }
 
@@ -158,7 +166,7 @@ export default class SearchBar extends React.Component {
 
         return (
             <Popover
-                id='searchbar-help-popup'
+                id={this.props.isSideBarRight ? 'sbr-searchbar-help-popup' : 'searchbar-help-popup'}
                 placement='bottom'
                 className={helpClass}
             >
@@ -187,9 +195,10 @@ export default class SearchBar extends React.Component {
                     }
                     ariaLabel={true}
                     buttonClass={'channel-header__icon style--none ' + mentionBtnClass}
-                    buttonId={'channelHeaderMentionButton'}
+                    buttonId={this.props.isSideBarRight ? 'sbrChannelHeaderMentionButton' : 'channelHeaderMentionButton'}
                     onClick={this.searchMentions}
                     tooltipKey={'recentMentions'}
+                    isRhsOpen={this.props.isRhsOpen}
                 />
             );
 
@@ -202,34 +211,24 @@ export default class SearchBar extends React.Component {
                     }
                     ariaLabel={true}
                     buttonClass={'channel-header__icon style--none ' + flagBtnClass}
-                    buttonId={'channelHeaderFlagButton'}
+                    buttonId={this.props.isSideBarRight ? 'sbrChannelHeaderFlagButton' : 'channelHeaderFlagButton'}
                     onClick={this.getFlagged}
                     tooltipKey={'flaggedPosts'}
+                    isRhsOpen={this.props.isRhsOpen}
                 />
             );
         }
-
-        const showClear = !this.props.isSearchingTerm && this.props.searchTerms && this.props.searchTerms.trim() !== '';
 
         let searchFormClass = 'search__form';
         if (this.state.focused) {
             searchFormClass += ' focused';
         }
 
-        const searchClearTooltip = (
-            <Tooltip id='searchClearTooltip'>
-                <FormattedMessage
-                    id='search_bar.clear'
-                    defaultMessage='Clear search query'
-                />
-            </Tooltip>
-        );
-
         return (
             <div className='sidebar-right__table'>
                 <div className='sidebar-collapse__container'>
                     <div
-                        id='sidebarCollapse'
+                        id={this.props.isSideBarRight ? 'sbrSidebarCollapse' : 'sidebarCollapse'}
                         className='sidebar-collapse'
                         onClick={this.handleClose}
                     >
@@ -247,7 +246,7 @@ export default class SearchBar extends React.Component {
                     </div>
                 </div>
                 <div
-                    id='searchFormContainer'
+                    id={this.props.isSideBarRight ? 'sbrSearchFormContainer' : 'searchFormContainer'}
                     className='search-form__container'
                 >
                     <form
@@ -256,19 +255,20 @@ export default class SearchBar extends React.Component {
                         onSubmit={this.handleSubmit}
                         style={style.searchForm}
                         autoComplete='off'
+                        aria-labelledby='searchBox'
                     >
                         <SearchIcon
-                            id='searchIcon'
                             className='search__icon'
                             aria-hidden='true'
                         />
                         <SuggestionBox
                             ref={this.getSearch}
-                            id='searchBox'
+                            id={this.props.isSideBarRight ? 'sbrSearchBox' : 'searchBox'}
                             tabIndex='0'
                             className='search-bar a11y__region'
-                            data-a11y-sort-order='8'
-                            aria-describedby='searchbar-help-popup'
+                            data-a11y-sort-order='9'
+                            aria-describedby={this.props.isSideBarRight ? 'sbr-searchbar-help-popup' : 'searchbar-help-popup'}
+                            aria-label={Utils.localizeMessage('search_bar.search', 'Search')}
                             placeholder={Utils.localizeMessage('search_bar.search', 'Search')}
                             value={this.props.searchTerms}
                             onFocus={this.handleUserFocus}
@@ -282,26 +282,9 @@ export default class SearchBar extends React.Component {
                             autoFocus={this.props.isFocus && this.props.searchTerms === ''}
                             delayInputUpdate={true}
                             renderDividers={true}
+                            clearable={true}
+                            onClear={this.onClear}
                         />
-                        {showClear &&
-                            <div
-                                id='searchClearButton'
-                                className='sidebar__search-clear visible'
-                                onClick={this.handleClear}
-                            >
-                                <OverlayTrigger
-                                    delayShow={Constants.OVERLAY_TIME_DELAY}
-                                    placement='bottom'
-                                    overlay={searchClearTooltip}
-                                >
-                                    <span
-                                        className='sidebar__search-clear-x'
-                                        aria-hidden='true'
-                                    >
-                                        {'×'}
-                                    </span>
-                                </OverlayTrigger>
-                            </div>}
                         {this.props.isSearchingTerm && <LoadingSpinner/>}
                         {this.renderHintPopover()}
                     </form>

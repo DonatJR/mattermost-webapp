@@ -8,7 +8,7 @@ import {FormattedMessage} from 'react-intl';
 import deferComponentRender from 'components/deferComponentRender';
 import ChannelHeader from 'components/channel_header';
 import CreatePost from 'components/create_post';
-import FileUploadOverlay from 'components/file_upload_overlay.jsx';
+import FileUploadOverlay from 'components/file_upload_overlay';
 import PostView from 'components/post_view';
 import TutorialView from 'components/tutorial';
 import {clearMarks, mark, measure, trackEvent} from 'actions/diagnostics_actions.jsx';
@@ -18,8 +18,12 @@ export default class ChannelView extends React.PureComponent {
     static propTypes = {
         channelId: PropTypes.string.isRequired,
         deactivatedChannel: PropTypes.bool.isRequired,
+        channelRolesLoading: PropTypes.bool.isRequired,
         match: PropTypes.shape({
             url: PropTypes.string.isRequired,
+            params: PropTypes.shape({
+                postid: PropTypes.string,
+            }).isRequired,
         }).isRequired,
         showTutorial: PropTypes.bool.isRequired,
         channelIsArchived: PropTypes.bool.isRequired,
@@ -44,12 +48,18 @@ export default class ChannelView extends React.PureComponent {
 
     static getDerivedStateFromProps(props, state) {
         let updatedState = {};
-        if (props.match.url !== state.url) {
-            updatedState = {deferredPostView: ChannelView.createDeferredPostView(), url: props.match.url};
+        const focusedPostId = props.match.params.postid;
+
+        if (props.match.url !== state.url && props.channelId !== state.channelId) {
+            updatedState = {deferredPostView: ChannelView.createDeferredPostView(), url: props.match.url, focusedPostId};
         }
 
         if (props.channelId !== state.channelId) {
-            updatedState = {...updatedState, channelId: props.channelId, prevChannelId: state.channelId};
+            updatedState = {...updatedState, channelId: props.channelId, prevChannelId: state.channelId, focusedPostId};
+        }
+
+        if (focusedPostId && focusedPostId !== state.focusedPostId) {
+            updatedState = {...updatedState, focusedPostId};
         }
 
         if (Object.keys(updatedState).length) {
@@ -125,34 +135,41 @@ export default class ChannelView extends React.PureComponent {
                     />
                 </div>
             );
-        } else {
+        } else if (channelIsArchived) {
             createPost = (
                 <div
                     className='post-create__container'
                     id='post-create'
                 >
-                    {!channelIsArchived &&
-                        <CreatePost
-                            getChannelView={this.getChannelView}
+                    <div
+                        id='channelArchivedMessage'
+                        className='channel-archived__message'
+                    >
+                        <FormattedMarkdownMessage
+                            id='archivedChannelMessage'
+                            defaultMessage='You are viewing an **archived channel**. New messages cannot be posted.'
                         />
-                    }
-                    {channelIsArchived &&
-                        <div className='channel-archived__message'>
-                            <FormattedMarkdownMessage
-                                id='archivedChannelMessage'
-                                defaultMessage='You are viewing an **archived channel**. New messages cannot be posted.'
+                        <button
+                            className='btn btn-primary channel-archived__close-btn'
+                            onClick={this.onClickCloseChannel}
+                        >
+                            <FormattedMessage
+                                id='center_panel.archived.closeChannel'
+                                defaultMessage='Close Channel'
                             />
-                            <button
-                                className='btn btn-primary channel-archived__close-btn'
-                                onClick={this.onClickCloseChannel}
-                            >
-                                <FormattedMessage
-                                    id='center_panel.archived.closeChannel'
-                                    defaultMessage='Close Channel'
-                                />
-                            </button>
-                        </div>
-                    }
+                        </button>
+                    </div>
+                </div>
+            );
+        } else if (!this.props.channelRolesLoading) {
+            createPost = (
+                <div
+                    className='post-create__container'
+                    id='post-create'
+                >
+                    <CreatePost
+                        getChannelView={this.getChannelView}
+                    />
                 </div>
             );
         }
@@ -172,6 +189,7 @@ export default class ChannelView extends React.PureComponent {
                 <DeferredPostView
                     channelId={this.props.channelId}
                     prevChannelId={this.state.prevChannelId}
+                    focusedPostId={this.state.focusedPostId}
                 />
                 {createPost}
             </div>

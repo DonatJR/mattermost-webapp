@@ -14,10 +14,10 @@ import {openModal} from 'actions/views/modals';
 import * as GlobalActions from 'actions/global_actions.jsx';
 import * as PostActions from 'actions/post_actions.jsx';
 
-import {isUrlSafe, getSiteURL} from 'utils/url.jsx';
+import {isUrlSafe, getSiteURL} from 'utils/url';
 import {localizeMessage, getUserIdFromChannelName} from 'utils/utils.jsx';
-import * as UserAgent from 'utils/user_agent.jsx';
-import {Constants, ModalIdentifiers} from 'utils/constants.jsx';
+import * as UserAgent from 'utils/user_agent';
+import {Constants, ModalIdentifiers} from 'utils/constants';
 import {browserHistory} from 'utils/browser_history';
 
 import UserSettingsModal from 'components/user_settings/modal';
@@ -57,10 +57,12 @@ export function executeCommand(message, args) {
             if (channel.type === Constants.PRIVATE_CHANNEL) {
                 GlobalActions.showLeavePrivateChannelModal(channel);
                 return {data: true};
-            } else if (
+            }
+            if (
                 channel.type === Constants.DM_CHANNEL ||
                 channel.type === Constants.GM_CHANNEL
             ) {
+                const currentUserId = getCurrentUserId(state);
                 let name;
                 let category;
                 if (channel.type === Constants.DM_CHANNEL) {
@@ -70,7 +72,6 @@ export function executeCommand(message, args) {
                     name = channel.id;
                     category = Constants.Preferences.CATEGORY_GROUP_CHANNEL_SHOW;
                 }
-                const currentUserId = getCurrentUserId(state);
                 const currentTeamId = getCurrentTeamId(state);
                 const redirectChannel = getRedirectChannelNameForTeam(state, currentTeamId);
                 const teamUrl = getCurrentRelativeTeamUrl(state);
@@ -86,7 +87,7 @@ export function executeCommand(message, args) {
             break;
         }
         case '/settings':
-            dispatch(openModal({ModalId: ModalIdentifiers.USER_SETTINGS, dialogType: UserSettingsModal}));
+            dispatch(openModal({modalId: ModalIdentifiers.USER_SETTINGS, dialogType: UserSettingsModal}));
             return {data: true};
         case '/collapse':
         case '/expand':

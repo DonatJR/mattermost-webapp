@@ -2,28 +2,30 @@
 // See LICENSE.txt for license information.
 
 import PropTypes from 'prop-types';
-import React, {Component} from 'react';
+import React from 'react';
 import {FormattedMessage} from 'react-intl';
-import {OverlayTrigger, Tooltip} from 'react-bootstrap';
+import {Tooltip} from 'react-bootstrap';
 
 import Permissions from 'mattermost-redux/constants/permissions';
 
-import {showGetPostLinkModal} from 'actions/global_actions.jsx';
-import {Locations, ModalIdentifiers, UNSET_POST_EDIT_TIME_LIMIT} from 'utils/constants.jsx';
+import {Locations, ModalIdentifiers, Constants} from 'utils/constants';
 import DeletePostModal from 'components/delete_post_modal';
-import DelayedAction from 'utils/delayed_action.jsx';
+import OverlayTrigger from 'components/overlay_trigger';
+import DelayedAction from 'utils/delayed_action';
 import * as PostUtils from 'utils/post_utils.jsx';
 import * as Utils from 'utils/utils.jsx';
 import ChannelPermissionGate from 'components/permissions_gates/channel_permission_gate';
 
 import Pluggable from 'plugins/pluggable';
 
-import Menu from 'components/widgets/menu/menu.jsx';
-import MenuWrapper from 'components/widgets/menu/menu_wrapper.jsx';
+import Menu from 'components/widgets/menu/menu';
+import MenuWrapper from 'components/widgets/menu/menu_wrapper';
 
 const MENU_BOTTOM_MARGIN = 80;
 
-export default class DotMenu extends Component {
+export const PLUGGABLE_COMPONENT = 'PostDropdownMenuItem';
+
+export default class DotMenu extends React.PureComponent {
     static propTypes = {
         post: PropTypes.object.isRequired,
         teamId: PropTypes.string,
@@ -38,6 +40,14 @@ export default class DotMenu extends Component {
         isLicensed: PropTypes.bool.isRequired,
         postEditTimeLimit: PropTypes.string.isRequired,
         enableEmojiPicker: PropTypes.bool.isRequired,
+        channelIsArchived: PropTypes.bool.isRequired,
+        currentTeamUrl: PropTypes.string.isRequired,
+
+        /*
+         * Components for overriding provided by plugins
+         */
+        components: PropTypes.object.isRequired,
+
         actions: PropTypes.shape({
 
             /**
@@ -69,7 +79,15 @@ export default class DotMenu extends Component {
              * Function to open a modal
              */
             openModal: PropTypes.func.isRequired,
+
+            /*
+             * Function to set the unread mark at given post
+             */
+            markPostAsUnread: PropTypes.func.isRequired,
         }).isRequired,
+
+        canEdit: PropTypes.bool.isRequired,
+        canDelete: PropTypes.bool.isRequired,
     }
 
     static defaultProps = {
@@ -89,6 +107,8 @@ export default class DotMenu extends Component {
 
         this.state = {
             openUp: false,
+            width: 0,
+            canEdit: props.canEdit && !props.isReadOnly,
         };
 
         this.buttonRef = React.createRef();
@@ -96,10 +116,10 @@ export default class DotMenu extends Component {
 
     disableCanEditPostByTime() {
         const {post, isLicensed, postEditTimeLimit} = this.props;
-        const canEdit = PostUtils.canEditPost(post);
+        const {canEdit} = this.state;
 
         if (canEdit && isLicensed) {
-            if (String(postEditTimeLimit) !== String(UNSET_POST_EDIT_TIME_LIMIT)) {
+            if (String(postEditTimeLimit) !== String(Constants.UNSET_POST_EDIT_TIME_LIMIT)) {
                 const milliseconds = 1000;
                 const timeLeft = (post.create_at + (postEditTimeLimit * milliseconds)) - Utils.getTimestamp();
                 if (timeLeft > 0) {
@@ -115,8 +135,8 @@ export default class DotMenu extends Component {
 
     static getDerivedStateFromProps(props) {
         return {
-            canDelete: PostUtils.canDeletePost(props.post) && !props.isReadOnly,
-            canEdit: PostUtils.canEditPost(props.post) && !props.isReadOnly,
+            canEdit: props.canEdit && !props.isReadOnly,
+            canDelete: props.canDelete && !props.isReadOnly,
         };
     }
 
@@ -146,9 +166,21 @@ export default class DotMenu extends Component {
         }
     }
 
-    handlePermalinkMenuItemActivated = (e) => {
-        e.preventDefault();
-        showGetPostLinkModal(this.props.post);
+    copyLink = () => {
+        const postUrl = `${this.props.currentTeamUrl}/pl/${this.props.post.id}`;
+
+        const clipboard = navigator.clipboard;
+        if (clipboard) {
+            clipboard.writeText(postUrl);
+        } else {
+            const hiddenInput = document.createElement('textarea');
+            hiddenInput.value = postUrl;
+            document.body.appendChild(hiddenInput);
+            hiddenInput.focus();
+            hiddenInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(hiddenInput);
+        }
     }
 
     handlePinMenuItemActivated = () => {
@@ -157,6 +189,11 @@ export default class DotMenu extends Component {
         } else {
             this.props.actions.pinPost(this.props.post.id);
         }
+    }
+
+    handleUnreadMenuItemActivated = (e) => {
+        e.preventDefault();
+        this.props.actions.markPostAsUnread(this.props.post);
     }
 
     handleDeleteMenuItemActivated = (e) => {
@@ -192,21 +229,37 @@ export default class DotMenu extends Component {
         >
             <FormattedMessage
                 id='post_info.dot_menu.tooltip.more_actions'
-                defaultMessage='More Actions'
+                defaultMessage='More actions'
             />
         </Tooltip>
     )
 
-    refCallback = (ref) => {
-        if (ref) {
-            const rect = ref.rect();
-            const y = rect.y || rect.top;
-            const height = rect.height;
+    refCallback = (menuRef) => {
+        if (menuRef) {
+            const rect = menuRef.rect();
+            const buttonRect = this.buttonRef.current.getBoundingClientRect();
+            const y = typeof buttonRect.y === 'undefined' ? buttonRect.top : buttonRect.y;
             const windowHeight = window.innerHeight;
-            if ((y + height) > (windowHeight - MENU_BOTTOM_MARGIN)) {
-                this.setState({openUp: true});
-            }
+
+            const totalSpace = windowHeight - MENU_BOTTOM_MARGIN;
+            const spaceOnTop = y - Constants.CHANNEL_HEADER_HEIGHT;
+            const spaceOnBottom = (totalSpace - (spaceOnTop + Constants.POST_AREA_HEIGHT));
+
+            this.setState({
+                openUp: (spaceOnTop > spaceOnBottom),
+                width: rect.width,
+            });
         }
+    }
+
+    renderDivider = (suffix) => {
+        return (
+            <li
+                id={`divider_post_${this.props.post.id}_${suffix}`}
+                className='MenuItem__divider'
+                role='menuitem'
+            />
+        );
     }
 
     render() {
@@ -218,6 +271,20 @@ export default class DotMenu extends Component {
                 return item.filter ? item.filter(this.props.post.id) : item;
             }).
             map((item) => {
+                if (item.subMenu) {
+                    return (
+                        <Menu.ItemSubMenu
+                            key={item.id + '_pluginmenuitem'}
+                            id={item.text.id}
+                            postId={this.props.post.id}
+                            text={item.text}
+                            subMenu={item.subMenu}
+                            action={item.action}
+                            xOffset={this.state.width}
+                            root={true}
+                        />
+                    );
+                }
                 return (
                     <Menu.ItemAction
                         key={item.id + '_pluginmenuitem'}
@@ -245,8 +312,9 @@ export default class DotMenu extends Component {
                     rootClose={true}
                 >
                     <button
+                        ref={this.buttonRef}
                         id={`${this.props.location}_button_${this.props.post.id}`}
-                        aria-label={Utils.localizeMessage('post_info.dot_menu.tooltip.more_actions', 'More Actions').toLowerCase()}
+                        aria-label={Utils.localizeMessage('post_info.dot_menu.tooltip.more_actions', 'More actions').toLowerCase()}
                         className='post__dropdown color--link style--none'
                         type='button'
                         aria-expanded='false'
@@ -259,6 +327,11 @@ export default class DotMenu extends Component {
                     ref={this.refCallback}
                     ariaLabel={Utils.localizeMessage('post_info.menuAriaLabel', 'Post extra options')}
                 >
+                    <Menu.ItemAction
+                        show={!isSystemMessage && this.props.location === Locations.CENTER}
+                        text={Utils.localizeMessage('post_info.reply', 'Reply')}
+                        onClick={this.props.handleCommentClick}
+                    />
                     <ChannelPermissionGate
                         channelId={this.props.post.channel_id}
                         teamId={this.props.teamId}
@@ -271,6 +344,18 @@ export default class DotMenu extends Component {
                         />
                     </ChannelPermissionGate>
                     <Menu.ItemAction
+                        id={`unread_post_${this.props.post.id}`}
+                        show={!isSystemMessage && !this.props.channelIsArchived && this.props.location !== Locations.SEARCH}
+                        text={Utils.localizeMessage('post_info.unread', 'Mark as Unread')}
+                        onClick={this.handleUnreadMenuItemActivated}
+                    />
+                    <Menu.ItemAction
+                        id={`permalink_${this.props.post.id}`}
+                        show={!isSystemMessage}
+                        text={Utils.localizeMessage('post_info.permalink', 'Copy Link')}
+                        onClick={this.copyLink}
+                    />
+                    <Menu.ItemAction
                         show={isMobile && !isSystemMessage && this.props.isFlagged}
                         text={Utils.localizeMessage('rhs_root.mobile.unflag', 'Unflag')}
                         onClick={this.handleFlagMenuItemActivated}
@@ -279,16 +364,6 @@ export default class DotMenu extends Component {
                         show={isMobile && !isSystemMessage && !this.props.isFlagged}
                         text={Utils.localizeMessage('rhs_root.mobile.flag', 'Flag')}
                         onClick={this.handleFlagMenuItemActivated}
-                    />
-                    <Menu.ItemAction
-                        show={!isSystemMessage && this.props.location === Locations.CENTER}
-                        text={Utils.localizeMessage('post_info.reply', 'Reply')}
-                        onClick={this.props.handleCommentClick}
-                    />
-                    <Menu.ItemAction
-                        show={!isSystemMessage}
-                        text={Utils.localizeMessage('post_info.permalink', 'Permalink')}
-                        onClick={this.handlePermalinkMenuItemActivated}
                     />
                     <Menu.ItemAction
                         id={`unpin_post_${this.props.post.id}`}
@@ -302,29 +377,25 @@ export default class DotMenu extends Component {
                         text={Utils.localizeMessage('post_info.pin', 'Pin')}
                         onClick={this.handlePinMenuItemActivated}
                     />
-                    <Menu.ItemAction
-                        id={`delete_post_${this.props.post.id}`}
-                        show={this.state.canDelete}
-                        text={Utils.localizeMessage('post_info.del', 'Delete')}
-                        onClick={this.handleDeleteMenuItemActivated}
-                    />
+                    {!isSystemMessage && (this.state.canEdit || this.state.canDelete) && this.renderDivider('edit')}
                     <Menu.ItemAction
                         id={`edit_post_${this.props.post.id}`}
                         show={this.state.canEdit}
                         text={Utils.localizeMessage('post_info.edit', 'Edit')}
                         onClick={this.handleEditMenuItemActivated}
                     />
-                    {pluginItems.length > 0 &&
-                    <li
-                        id={`divider_post_${this.props.post.id}`}
-                        className='MenuItem__divider'
-                        role='menuitem'
+                    <Menu.ItemAction
+                        id={`delete_post_${this.props.post.id}`}
+                        show={this.state.canDelete}
+                        text={Utils.localizeMessage('post_info.del', 'Delete')}
+                        onClick={this.handleDeleteMenuItemActivated}
+                        isDangerous={true}
                     />
-                    }
+                    {(pluginItems.length > 0 || (this.props.components[PLUGGABLE_COMPONENT] && this.props.components[PLUGGABLE_COMPONENT].length > 0)) && this.renderDivider('plugins')}
                     {pluginItems}
                     <Pluggable
                         postId={this.props.post.id}
-                        pluggableName='PostDropdownMenuItem'
+                        pluggableName={PLUGGABLE_COMPONENT}
                     />
                 </Menu>
             </MenuWrapper>

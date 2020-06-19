@@ -4,35 +4,37 @@
 import $ from 'jquery';
 import React from 'react';
 import {FormattedMessage} from 'react-intl';
-import semver from 'semver';
 
 import {Client4} from 'mattermost-redux/client';
 import {Posts} from 'mattermost-redux/constants';
 import {getChannel, getRedirectChannelNameForTeam} from 'mattermost-redux/selectors/entities/channels';
 import {getConfig} from 'mattermost-redux/selectors/entities/general';
 import {getTeammateNameDisplaySetting, getBool} from 'mattermost-redux/selectors/entities/preferences';
-import {getCurrentUserId, getUser, getUserByUsername as getUserByUsernameRedux} from 'mattermost-redux/selectors/entities/users';
+import {getCurrentUserId, getUser} from 'mattermost-redux/selectors/entities/users';
 import {
     blendColors,
     changeOpacity,
 } from 'mattermost-redux/utils/theme_utils';
 import {displayUsername} from 'mattermost-redux/utils/user_utils';
 import {getCurrentTeamId, getCurrentRelativeTeamUrl, getTeam} from 'mattermost-redux/selectors/entities/teams';
-import {logError} from 'mattermost-redux/actions/errors';
 import cssVars from 'css-vars-ponyfill';
 
 import {browserHistory} from 'utils/browser_history';
 import {searchForTerm} from 'actions/post_actions';
 import Constants, {FileTypes, UserStatuses} from 'utils/constants.jsx';
-import * as UserAgent from 'utils/user_agent.jsx';
+import * as UserAgent from 'utils/user_agent';
+import * as Utils from 'utils/utils';
 import bing from 'images/bing.mp3';
 import {t} from 'utils/i18n';
 import store from 'stores/redux_store.jsx';
-import {showNotification} from 'utils/notifications.jsx';
 import {getCurrentLocale, getTranslations} from 'selectors/i18n';
 
 export function isMac() {
     return navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+}
+
+export function isLinux() {
+    return navigator.platform.toUpperCase().indexOf('LINUX') >= 0;
 }
 
 export function createSafeId(prop) {
@@ -92,12 +94,12 @@ export function isInRole(roles, inRole) {
     return false;
 }
 
-export function isChannelAdmin(isLicensed, roles) {
+export function isChannelAdmin(isLicensed, roles, hasAdminScheme = false) {
     if (!isLicensed) {
         return false;
     }
 
-    if (isInRole(roles, 'channel_admin')) {
+    if (isInRole(roles, 'channel_admin') || hasAdminScheme) {
         return true;
     }
 
@@ -140,8 +142,7 @@ export function getTeamRelativeUrl(team) {
     return '/' + team.name;
 }
 
-export function getChannelURL(channel, teamId) {
-    const state = store.getState();
+export function getChannelURL(state, channel, teamId) {
     let notificationURL;
     if (channel && (channel.type === Constants.DM_CHANNEL || channel.type === Constants.GM_CHANNEL)) {
         notificationURL = getCurrentRelativeTeamUrl(state) + '/channels/' + channel.name;
@@ -160,39 +161,6 @@ export function getChannelURL(channel, teamId) {
     return notificationURL;
 }
 
-export function notifyMe(title, body, channel, teamId, silent) {
-    // handle notifications in desktop app >= 4.3.0
-    if (UserAgent.isDesktopApp() && window.desktop && semver.gte(window.desktop.version, '4.3.0')) {
-        // get the desktop app to trigger the notification
-        window.postMessage(
-            {
-                type: 'dispatch-notification',
-                message: {
-                    title,
-                    body,
-                    channel,
-                    teamId,
-                    silent,
-                },
-            },
-            window.location.origin
-        );
-    } else {
-        showNotification({
-            title,
-            body,
-            requireInteraction: false,
-            silent,
-            onClick: () => {
-                window.focus();
-                browserHistory.push(getChannelURL(channel, teamId));
-            },
-        }).catch((error) => {
-            store.dispatch(logError(error));
-        });
-    }
-}
-
 var canDing = true;
 
 export function ding() {
@@ -207,54 +175,11 @@ export function ding() {
 }
 
 export function hasSoundOptions() {
-    return (!(UserAgent.isFirefox()) && !(UserAgent.isEdge()));
+    return (!UserAgent.isEdge());
 }
 
 export function getDateForUnixTicks(ticks) {
     return new Date(ticks);
-}
-
-export function displayDate(ticks) {
-    var d = new Date(ticks);
-    var monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-    return monthNames[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
-}
-
-export function displayTime(ticks, utc) {
-    const d = new Date(ticks);
-    let hours;
-    let minutes;
-    let ampm = '';
-    let timezone = '';
-
-    if (utc) {
-        hours = d.getUTCHours();
-        minutes = d.getUTCMinutes();
-        timezone = ' UTC';
-    } else {
-        hours = d.getHours();
-        minutes = d.getMinutes();
-    }
-
-    if (minutes <= 9) {
-        minutes = '0' + minutes;
-    }
-
-    const useMilitaryTime = getBool(store.getState(), Constants.Preferences.CATEGORY_DISPLAY_SETTINGS, 'use_military_time');
-    if (!useMilitaryTime) {
-        ampm = ' AM';
-        if (hours >= 12) {
-            ampm = ' PM';
-        }
-
-        hours %= 12;
-        if (!hours) {
-            hours = '12';
-        }
-    }
-
-    return hours + ':' + minutes + ampm + timezone;
 }
 
 // returns Unix timestamp in milliseconds
@@ -524,10 +449,8 @@ export function applyTheme(theme) {
         changeCss('.multi-select__focused > div', 'box-shadow: inset 0 0 1px 3px ' + changeOpacity(theme.sidebarText, 0.5) + ', inset 0 0 0 1px ' + theme.sidebarText);
         changeCss('.app__body .ps-container > .ps-scrollbar-y-rail > .ps-scrollbar-y', 'background:' + theme.sidebarText);
         changeCss('.app__body .ps-container:hover .ps-scrollbar-y-rail:hover, .app__body .sidebar__switcher button:hover', 'background:' + changeOpacity(theme.sidebarText, 0.15));
-        changeCss('.app__body .sidebar--left .nav-pills__container li > h4, .app__body .sidebar--left .nav-pills__container li > .nav-more, .app__body .sidebar--right, .app__body .modal .settings-modal .nav-pills>li button', 'color:' + changeOpacity(theme.sidebarText, 0.6));
+        changeCss('.app__body .sidebar--right, .app__body .modal .settings-modal .nav-pills>li button', 'color:' + changeOpacity(theme.sidebarText, 0.6));
         changeCss('@media(max-width: 768px){.app__body .modal .settings-modal .settings-table .nav>li>a, .app__body .sidebar--menu', 'color:' + changeOpacity(theme.sidebarText, 0.8));
-        changeCss('.app__body .sidebar--left .add-channel-btn', 'color:' + changeOpacity(theme.sidebarText, 0.8));
-        changeCss('.sidebar--left .add-channel-btn:hover, .sidebar--left .add-channel-btn:focus', 'color:' + theme.sidebarText);
         changeCss('.sidebar--left .status .offline--icon, .app__body .sidebar--menu svg, .app__body .sidebar-item .icon', 'fill:' + theme.sidebarText);
         changeCss('.sidebar--left .status.status--group', 'background:' + changeOpacity(theme.sidebarText, 0.3));
         changeCss('@media(max-width: 768px){.app__body .modal .settings-modal .settings-table .nav>li>button, .app__body #sidebarDropdownMenu .menu-divider', 'border-color:' + changeOpacity(theme.sidebarText, 0.2));
@@ -539,10 +462,7 @@ export function applyTheme(theme) {
         changeCss('.app__body .sidebar--left .sidebar__switcher span', 'color:' + theme.sidebarText);
         changeCss('.app__body .sidebar--left .sidebar__switcher button svg', 'fill:' + theme.sidebarText);
         changeCss('.channel-header .channel-header_plugin-dropdown a, .app__body .sidebar__switcher button', 'background:' + changeOpacity(theme.sidebarText, 0.08));
-    }
-
-    if (theme.sidebarUnreadText) {
-        changeCss('.sidebar--left .nav-pills__container li .sidebar-item.unread-title', 'color:' + theme.sidebarUnreadText);
+        changeCss('.app__body .icon__bot', 'fill:' + theme.sidebarText);
     }
 
     if (theme.sidebarTextHoverBg) {
@@ -553,6 +473,7 @@ export function applyTheme(theme) {
         changeCss('.sidebar--left .nav li.active .sidebar-item:before, .app__body .modal .settings-modal .nav-pills>li.active button:before', 'background:' + theme.sidebarTextActiveBorder);
         changeCss('.sidebar--left .sidebar__divider:before', 'background:' + changeOpacity(theme.sidebarTextActiveBorder, 0.5));
         changeCss('.sidebar--left .sidebar__divider', 'color:' + theme.sidebarTextActiveBorder);
+        changeCss('.multi-teams .team-sidebar .team-wrapper .team-container:before', 'background:' + theme.sidebarTextActiveBorder);
         changeCss('.multi-teams .team-sidebar .team-wrapper .team-container.active:before', 'background:' + theme.sidebarTextActiveBorder);
         changeCss('.multi-teams .team-sidebar .team-wrapper .team-container.unread:before', 'background:' + theme.sidebarTextActiveBorder);
     }
@@ -566,20 +487,20 @@ export function applyTheme(theme) {
     if (theme.sidebarHeaderBg) {
         changeCss('.app__body .MenuWrapper .status-wrapper .status, .app__body #status-dropdown .status-wrapper .status-edit, .sidebar--left .team__header, .app__body .sidebar--menu .team__header, .app__body .post-list__timestamp > div', 'background:' + theme.sidebarHeaderBg);
         changeCss('.app__body .modal .modal-header', 'background:' + theme.sidebarHeaderBg);
-        changeCss('.app__body .multi-teams .team-sidebar, .app__body #navbar .navbar-default', 'background:' + theme.sidebarHeaderBg);
+        changeCss('.app__body .multi-teams .team-sidebar, .app__body #navbar_wrapper .navbar-default', 'background:' + theme.sidebarHeaderBg);
         changeCss('@media(max-width: 768px){.app__body .search-bar__container', 'background:' + theme.sidebarHeaderBg);
         changeCss('.app__body .attachment .attachment__container', 'border-left-color:' + theme.sidebarHeaderBg);
         changeCss('.emoji-picker .emoji-picker__header', 'background:' + theme.sidebarHeaderBg);
     }
 
     if (theme.sidebarHeaderTextColor) {
-        changeCss('.app__body .MenuWrapper .status-wrapper .status, .app__body #status-dropdown .status-wrapper .status-edit, .multi-teams .team-sidebar .team-wrapper .team-container .team-btn, .sidebar--left .team__header .header__info, .app__body .sidebar--menu .team__header .header__info, .app__body .post-list__timestamp > div', 'color:' + theme.sidebarHeaderTextColor);
+        changeCss('.app__body .MenuWrapper .status-wrapper .status, .app__body #status-dropdown .status-wrapper .status-edit, .sidebar--left .team__header .header__info, .app__body .sidebar--menu .team__header .header__info, .app__body .post-list__timestamp > div', 'color:' + theme.sidebarHeaderTextColor);
         changeCss('.app__body .icon--sidebarHeaderTextColor svg, .app__body .sidebar-header-dropdown__icon svg', 'fill:' + theme.sidebarHeaderTextColor);
         changeCss('.sidebar--left .team__header .user__name, .app__body .sidebar--menu .team__header .user__name', 'color:' + changeOpacity(theme.sidebarHeaderTextColor, 0.8));
         changeCss('.sidebar--left .team__header:hover .user__name, .app__body .sidebar--menu .team__header:hover .user__name', 'color:' + theme.sidebarHeaderTextColor);
         changeCss('.app__body .modal .modal-header .modal-title, .app__body .modal .modal-header .modal-title .name', 'color:' + theme.sidebarHeaderTextColor);
-        changeCss('.app__body #navbar .navbar-default .navbar-brand', 'color:' + theme.sidebarHeaderTextColor);
-        changeCss('.app__body #navbar .navbar-default .navbar-toggle .icon-bar', 'background:' + theme.sidebarHeaderTextColor);
+        changeCss('.app__body #navbar_wrapper .navbar-default .navbar-brand', 'color:' + theme.sidebarHeaderTextColor);
+        changeCss('.app__body #navbar_wrapper .navbar-default .navbar-toggle .icon-bar', 'background:' + theme.sidebarHeaderTextColor);
         changeCss('.app__body .post-list__timestamp > div, .app__body .multi-teams .team-sidebar .team-wrapper .team-container a:hover .team-btn__content, .app__body .multi-teams .team-sidebar .team-wrapper .team-container.active .team-btn__content', 'border-color:' + changeOpacity(theme.sidebarHeaderTextColor, 0.5));
         changeCss('.app__body .team-btn', 'border-color:' + changeOpacity(theme.sidebarHeaderTextColor, 0.3));
         changeCss('@media(max-width: 768px){.app__body .search-bar__container', 'color:' + theme.sidebarHeaderTextColor);
@@ -723,7 +644,7 @@ export function applyTheme(theme) {
         changeCss('.app__body .shadow--2', '-webkit-box-shadow: 0  20px 30px 0 ' + changeOpacity(theme.centerChannelColor, 0.1) + ', 0 14px 20px 0 ' + changeOpacity(theme.centerChannelColor, 0.1));
         changeCss('.app__body .shortcut-key, .app__body .post__body hr, .app__body .loading-screen .loading__content .round, .app__body .tutorial__circles .circle', 'background:' + theme.centerChannelColor);
         changeCss('.app__body .channel-header .heading', 'color:' + theme.centerChannelColor);
-        changeCss('.app__body .col__reply > button:hover, .app__body .col__reply > a:hover, .app__body .col__reply > div:hover, .app__body .markdown__table tbody tr:nth-child(2n)', 'background:' + changeOpacity(theme.centerChannelColor, 0.07));
+        changeCss('.app__body .markdown__table tbody tr:nth-child(2n)', 'background:' + changeOpacity(theme.centerChannelColor, 0.07));
         changeCss('.app__body .channel-header__info .header-dropdown__icon', 'color:' + changeOpacity(theme.centerChannelColor, 0.8));
         changeCss('.app__body .post-create__container .post-create-body .send-button.disabled i', 'color:' + changeOpacity(theme.centerChannelColor, 0.4));
         changeCss('.app__body .channel-header .pinned-posts-button svg', 'fill:' + changeOpacity(theme.centerChannelColor, 0.6));
@@ -735,7 +656,7 @@ export function applyTheme(theme) {
         changeCss('.app__body .popover.right>.arrow', 'border-right-color:' + changeOpacity(theme.centerChannelColor, 0.25));
         changeCss('.app__body .popover.left>.arrow', 'border-left-color:' + changeOpacity(theme.centerChannelColor, 0.25));
         changeCss('.app__body .popover.top>.arrow', 'border-top-color:' + changeOpacity(theme.centerChannelColor, 0.25));
-        changeCss('.app__body .suggestion-list__content .command, .app__body .popover .popover-title', 'border-color:' + changeOpacity(theme.centerChannelColor, 0.2));
+        changeCss('.app__body .suggestion-list__content .command', 'border-color:' + changeOpacity(theme.centerChannelColor, 0.2));
         changeCss('.app__body .suggestion-list__content .command, .app__body .popover .popover__row', 'border-color:' + changeOpacity(theme.centerChannelColor, 0.2));
         changeCss('.app__body .suggestion-list__divider:before, .app__body .menu-divider, .app__body .search-help-popover .search-autocomplete__divider:before', 'background:' + theme.centerChannelColor);
         changeCss('body.app__body, .app__body .custom-textarea', 'color:' + theme.centerChannelColor);
@@ -764,11 +685,11 @@ export function applyTheme(theme) {
         changeCss('@media(min-width: 768px){.app__body .post:hover, .app__body .post.a11y--active, .app__body .modal .settings-modal .settings-table .settings-content .section-min:hover', 'background:' + changeOpacity(theme.centerChannelColor, 0.08));
         changeCss('@media(min-width: 768px){.app__body .post.current--user:hover .post__body ', 'background: transparent;');
         changeCss('.app__body .more-modal__row.more-modal__row--selected, .app__body .date-separator.hovered--before:after, .app__body .date-separator.hovered--after:before, .app__body .new-separator.hovered--after:before, .app__body .new-separator.hovered--before:after', 'background:' + changeOpacity(theme.centerChannelColor, 0.07));
-        changeCss('@media(min-width: 768px){.app__body .suggestion-list__content .command:hover, .app__body .mentions__name:hover, .app__body .dropdown-menu>li>a:focus, .app__body .dropdown-menu>li>a:hover', 'background:' + changeOpacity(theme.centerChannelColor, 0.15));
-        changeCss('.app__body .suggestion--selected, .app__body .emoticon-suggestion:hover', 'background:' + changeOpacity(theme.centerChannelColor, 0.15));
+        changeCss('@media(min-width: 768px){.app__body .dropdown-menu>li>a:focus, .app__body .dropdown-menu>li>a:hover', 'background:' + changeOpacity(theme.centerChannelColor, 0.15));
+        changeCss('.app__body .suggestion--selected', 'background:' + changeOpacity(theme.centerChannelColor, 0.15));
         changeCss('code, .app__body .form-control[disabled], .app__body .form-control[readonly], .app__body fieldset[disabled] .form-control', 'background:' + changeOpacity(theme.centerChannelColor, 0.1));
         changeCss('.app__body .sidebar--right', 'color:' + theme.centerChannelColor);
-        changeCss('.app__body .search-help-popover .search-autocomplete__item:hover, .app__body .modal .settings-modal .settings-table .settings-content .appearance-section .theme-elements__body', 'background:' + changeOpacity(theme.centerChannelColor, 0.05));
+        changeCss('.app__body .modal .settings-modal .settings-table .settings-content .appearance-section .theme-elements__body', 'background:' + changeOpacity(theme.centerChannelColor, 0.05));
         changeCss('.app__body .search-help-popover .search-autocomplete__item.selected', 'background:' + changeOpacity(theme.centerChannelColor, 0.15));
         if (!UserAgent.isFirefox() && !UserAgent.isInternetExplorer() && !UserAgent.isEdge()) {
             changeCss('body.app__body ::-webkit-scrollbar-thumb', 'background:' + changeOpacity(theme.centerChannelColor, 0.4));
@@ -789,12 +710,9 @@ export function applyTheme(theme) {
         changeCss('.app__body .emoji-picker__search-icon', 'color:' + changeOpacity(theme.centerChannelColor, 0.4));
         changeCss('.app__body .emoji-picker__preview, .app__body .emoji-picker__items, .app__body .emoji-picker__search-container', 'border-color:' + changeOpacity(theme.centerChannelColor, 0.2));
         changeCss('.emoji-picker__category .fa:hover', 'color:' + changeOpacity(theme.centerChannelColor, 0.8));
-        changeCss('.app__body .emoji-picker__category, .app__body .emoji-picker__category:focus, .app__body .emoji-picker__category:hover', 'color:' + changeOpacity(theme.centerChannelColor, 0.3));
         changeCss('.app__body .emoji-picker__category--selected, .app__body .emoji-picker__category--selected:focus, .app__body .emoji-picker__category--selected:hover', 'color:' + theme.centerChannelColor);
         changeCss('.app__body .emoji-picker__item-wrapper:hover', 'background-color:' + changeOpacity(theme.centerChannelColor, 0.8));
-        changeCss('.app__body .emoji-picker-items__container .emoji-picker__item.selected', 'background-color:' + changeOpacity(theme.centerChannelColor, 0.8));
         changeCss('.app__body .icon__postcontent_picker:hover', 'color:' + changeOpacity(theme.centerChannelColor, 0.8));
-        changeCss('.app__body .popover', 'border-color:' + changeOpacity(theme.centerChannelColor, 0.07));
         changeCss('.app__body .emoji-picker .nav-tabs li a', 'fill:' + theme.centerChannelColor);
         changeCss('.app__body .post .post-collapse__show-more-button', `border-color:${changeOpacity(theme.centerChannelColor, 0.1)}`);
         changeCss('.app__body .post .post-collapse__show-more-line', `background-color:${changeOpacity(theme.centerChannelColor, 0.1)}`);
@@ -997,13 +915,18 @@ export function applyTheme(theme) {
         variables: {
             'sidebar-bg': theme.sidebarBg,
             'sidebar-text': theme.sidebarText,
+            'sidebar-text-30': changeOpacity(theme.sidebarText, 0.3),
+            'sidebar-text-50': changeOpacity(theme.sidebarText, 0.5),
             'sidebar-text-60': changeOpacity(theme.sidebarText, 0.6),
+            'sidebar-text-72': changeOpacity(theme.sidebarText, 0.72),
+            'sidebar-text-80': changeOpacity(theme.sidebarText, 0.8),
             'sidebar-unread-text': theme.sidebarUnreadText,
             'sidebar-text-hover-bg': theme.sidebarTextHoverBg,
             'sidebar-text-active-border': theme.sidebarTextActiveBorder,
             'sidebar-text-active-color': theme.sidebarTextActiveColor,
             'sidebar-header-bg': theme.sidebarHeaderBg,
             'sidebar-header-text-color': theme.sidebarHeaderTextColor,
+            'sidebar-header-text-color-80': changeOpacity(theme.sidebarHeaderTextColor, 0.8),
             'online-indicator': theme.onlineIndicator,
             'away-indicator': theme.awayIndicator,
             'dnd-indicator': theme.dndIndicator,
@@ -1015,6 +938,7 @@ export function applyTheme(theme) {
             'center-channel-color-90': changeOpacity(theme.centerChannelColor, 0.9),
             'center-channel-bg-80': changeOpacity(theme.centerChannelBg, 0.8),
             'center-channel-color-80': changeOpacity(theme.centerChannelColor, 0.8),
+            'center-channel-color-72': changeOpacity(theme.centerChannelColor, 0.72),
             'center-channel-bg-60': changeOpacity(theme.centerChannelBg, 0.6),
             'center-channel-color-60': changeOpacity(theme.centerChannelColor, 0.6),
             'center-channel-bg-50': changeOpacity(theme.centerChannelBg, 0.5),
@@ -1030,6 +954,7 @@ export function applyTheme(theme) {
             'center-channel-bg-10': changeOpacity(theme.centerChannelBg, 0.1),
             'center-channel-color-10': changeOpacity(theme.centerChannelColor, 0.1),
             'center-channel-bg-05': changeOpacity(theme.centerChannelBg, 0.05),
+            'center-channel-color-08': changeOpacity(theme.centerChannelColor, 0.08),
             'center-channel-color-05': changeOpacity(theme.centerChannelColor, 0.05),
             'new-message-separator': theme.newMessageSeparator,
             'link-color': theme.linkColor,
@@ -1057,6 +982,7 @@ export function applyTheme(theme) {
             'button-color-05': changeOpacity(theme.buttonColor, 0.05),
             'error-text': theme.errorTextColor,
             'error-text-08': changeOpacity(theme.errorTextColor, 0.08),
+            'error-text-12': changeOpacity(theme.errorTextColor, 0.12),
             'mention-highlight-bg': theme.mentionHighlightBg,
             'mention-highlight-link': theme.mentionHighlightLink,
         },
@@ -1198,22 +1124,24 @@ export function isValidUsername(name) {
     return error;
 }
 
+export function isValidBotUsername(name) {
+    let error = isValidUsername(name);
+    if (error) {
+        return error;
+    }
+
+    if (name.endsWith('.')) {
+        error = "Username must not end with '.' symbol.";
+    }
+
+    return error;
+}
+
 export function isMobile() {
     return window.innerWidth <= Constants.MOBILE_SCREEN_WIDTH;
 }
 
-export function getUserById(userId) {
-    const state = store.getState();
-    return getUser(state, userId);
-}
-
-export function getUserByUsername(username) {
-    const state = store.getState();
-    return getUserByUsernameRedux(state, username);
-}
-
-export function getDirectTeammate(channelId) {
-    const state = store.getState();
+export function getDirectTeammate(state, channelId) {
     let teammate = {};
 
     const channel = getChannel(state, channelId);
@@ -1339,15 +1267,14 @@ export function getLongDisplayNameParts(user) {
 /**
  * Gets the display name of the user with the specified id, respecting the TeammateNameDisplay configuration setting
  */
-export function getDisplayNameByUserId(userId) {
-    return getDisplayNameByUser(getUser(store.getState(), userId));
+export function getDisplayNameByUserId(state, userId) {
+    return getDisplayNameByUser(state, getUser(state, userId));
 }
 
 /**
  * Gets the display name of the specified user, respecting the TeammateNameDisplay configuration setting
  */
-export function getDisplayNameByUser(user) {
-    const state = store.getState();
+export function getDisplayNameByUser(state, user) {
     const teammateNameDisplay = getTeammateNameDisplaySetting(state);
     if (user) {
         return displayUsername(user, teammateNameDisplay);
@@ -1368,7 +1295,7 @@ const UserStatusesWeight = {
 /**
  * Sort users by status then by display name, respecting the TeammateNameDisplay configuration setting
  */
-export function sortUsersByStatusAndDisplayName(users, statusesByUserId) {
+export function sortUsersByStatusAndDisplayName(users, statusesByUserId, teammateNameDisplay) {
     function compareUsers(a, b) {
         const aStatus = a.is_bot ? 'bot' : statusesByUserId[a.id] || UserStatuses.OFFLINE;
         const bStatus = b.is_bot ? 'bot' : statusesByUserId[b.id] || UserStatuses.OFFLINE;
@@ -1377,20 +1304,13 @@ export function sortUsersByStatusAndDisplayName(users, statusesByUserId) {
             return UserStatusesWeight[aStatus] - UserStatusesWeight[bStatus];
         }
 
-        const aName = getDisplayNameByUser(a);
-        const bName = getDisplayNameByUser(b);
+        const aName = displayUsername(a, teammateNameDisplay);
+        const bName = displayUsername(b, teammateNameDisplay);
 
         return aName.localeCompare(bName);
     }
 
     return users.sort(compareUsers);
-}
-
-/**
- * Gets the entire name, including username, full name, and nickname, of the user with the specified id
- */
-export function displayEntireName(userId) {
-    return displayEntireNameForUser(getUser(store.getState(), userId));
 }
 
 /**
@@ -1433,15 +1353,8 @@ export function displayEntireNameForUser(user) {
     return displayName;
 }
 
-export function imageURLForUser(userIdOrObject) {
-    if (typeof userIdOrObject == 'string') {
-        const profile = getUser(store.getState(), userIdOrObject);
-        if (profile) {
-            return imageURLForUser(profile);
-        }
-        return Constants.TRANSPARENT_PIXEL;
-    }
-    return Client4.getUsersRoute() + '/' + userIdOrObject.id + '/image?_=' + (userIdOrObject.last_picture_update || 0);
+export function imageURLForUser(userId, lastPictureUpdate = 0) {
+    return Client4.getUsersRoute() + '/' + userId + '/image?_=' + lastPictureUpdate;
 }
 
 export function defaultImageURLForUser(userId) {
@@ -1449,16 +1362,8 @@ export function defaultImageURLForUser(userId) {
 }
 
 // in contrast to Client4.getTeamIconUrl, for ui logic this function returns null if last_team_icon_update is unset
-export function imageURLForTeam(teamIdOrObject) {
-    if (typeof teamIdOrObject == 'string') {
-        const team = getTeam(store.getState(), teamIdOrObject);
-        if (team) {
-            return imageURLForTeam(team);
-        }
-        return null;
-    }
-
-    return teamIdOrObject.last_team_icon_update ? Client4.getTeamIconUrl(teamIdOrObject.id, teamIdOrObject.last_team_icon_update) : null;
+export function imageURLForTeam(team) {
+    return team.last_team_icon_update ? Client4.getTeamIconUrl(team.id, team.last_team_icon_update) : null;
 }
 
 // Converts a file size in bytes into a human-readable string of the form '123MB'.
@@ -1528,8 +1433,8 @@ export function getUserIdFromChannelId(channelId, currentUserId = getCurrentUser
     return otherUserId;
 }
 
-export function importSlack(file, success, error) {
-    Client4.importTeam(getCurrentTeamId(store.getState()), file, 'slack').then(success).catch(error);
+export function importSlack(teamId, file, success, error) {
+    Client4.importTeam(teamId, file, 'slack').then(success).catch(error);
 }
 
 export function windowWidth() {
@@ -1540,8 +1445,9 @@ export function windowHeight() {
     return $(window).height();
 }
 
-export function isFeatureEnabled(feature) {
-    return getBool(store.getState(), Constants.Preferences.CATEGORY_ADVANCED_SETTINGS, Constants.FeatureTogglePrefix + feature.label);
+// Should be refactored, seems to make most sense to wrap TextboxLinks in a connect(). To discuss
+export function isFeatureEnabled(feature, state) {
+    return getBool(state, Constants.Preferences.CATEGORY_ADVANCED_SETTINGS, Constants.FeatureTogglePrefix + feature.label);
 }
 
 export function fillArray(value, length) {
@@ -1558,10 +1464,21 @@ export function fillArray(value, length) {
 // Slightly modified from http://stackoverflow.com/questions/6848043/how-do-i-detect-a-file-is-being-dragged-rather-than-a-draggable-element-on-my-pa
 export function isFileTransfer(files) {
     if (UserAgent.isInternetExplorer() || UserAgent.isEdge()) {
-        return files.types != null && files.types.contains('Files');
+        return files.types != null && files.types.includes('Files');
     }
 
     return files.types != null && (files.types.indexOf ? files.types.indexOf('Files') !== -1 : files.types.contains('application/x-moz-file'));
+}
+
+export function isUriDrop(dataTransfer) {
+    if (UserAgent.isInternetExplorer() || UserAgent.isEdge() || UserAgent.isSafari()) {
+        for (let i = 0; i < dataTransfer.items.length; i++) {
+            if (dataTransfer.items[i].type === 'text/uri-list') {
+                return true;
+            }
+        }
+    }
+    return false; // we don't care about others, they handle as we want it
 }
 
 export function clearFileInput(elm) {
@@ -1583,6 +1500,10 @@ export function isPostEphemeral(post) {
 
 export function getRootId(post) {
     return post.root_id === '' ? post.id : post.root_id;
+}
+
+export function getRootPost(postList) {
+    return postList.find((post) => post.root_id === '');
 }
 
 export function localizeMessage(id, defaultMessage) {
@@ -1672,10 +1593,11 @@ export function isValidPassword(password, passwordConfig) {
     return {valid, error};
 }
 
-export function handleFormattedTextClick(e) {
+export function handleFormattedTextClick(e, currentRelativeTeamUrl) {
     const hashtagAttribute = e.target.getAttributeNode('data-hashtag');
     const linkAttribute = e.target.getAttributeNode('data-link');
     const channelMentionAttribute = e.target.getAttributeNode('data-channel-mention');
+    const channelMentionTeamAttribute = e.target.getAttributeNode('data-channel-mention-team');
 
     if (hashtagAttribute) {
         e.preventDefault();
@@ -1689,9 +1611,12 @@ export function handleFormattedTextClick(e) {
 
             browserHistory.push(linkAttribute.value);
         }
+    } else if (channelMentionAttribute && channelMentionTeamAttribute) {
+        e.preventDefault();
+        browserHistory.push(channelMentionTeamAttribute + '/channels/' + channelMentionAttribute.value);
     } else if (channelMentionAttribute) {
         e.preventDefault();
-        browserHistory.push(getCurrentRelativeTeamUrl(store.getState()) + '/channels/' + channelMentionAttribute.value);
+        browserHistory.push(currentRelativeTeamUrl + '/channels/' + channelMentionAttribute.value);
     }
 }
 
@@ -1800,4 +1725,60 @@ export function enableDevModeFeatures() {
             throw new Error('Map.length is not supported. Use Map.size instead.');
         },
     });
+}
+
+/**
+ * Get closest parent which match selector
+ */
+export function getClosestParent(elem, selector) {
+    // Element.matches() polyfill
+    if (!Element.prototype.matches) {
+        Element.prototype.matches =
+        Element.prototype.matchesSelector ||
+        Element.prototype.mozMatchesSelector ||
+        Element.prototype.msMatchesSelector ||
+        Element.prototype.oMatchesSelector ||
+        Element.prototype.webkitMatchesSelector ||
+        ((s) => {
+            const matches = (this.document || this.ownerDocument).querySelectorAll(s);
+            let i = matches.length - 1;
+            while (i >= 0 && matches.item(i) !== this) {
+                i--;
+            }
+            return i > -1;
+        });
+    }
+
+    // Get the closest matching element
+    let currentElem = elem;
+    for (; currentElem && currentElem !== document; currentElem = currentElem.parentNode) {
+        if (currentElem.matches(selector)) {
+            return currentElem;
+        }
+    }
+    return null;
+}
+
+export function getSortedUsers(reactions, currentUserId, profiles, teammateNameDisplay) {
+    // Sort users by who reacted first with "you" being first if the current user reacted
+
+    let currentUserReacted = false;
+    const sortedReactions = reactions.sort((a, b) => a.create_at - b.create_at);
+    const users = sortedReactions.reduce((accumulator, current) => {
+        if (current.user_id === currentUserId) {
+            currentUserReacted = true;
+        } else {
+            const user = profiles.find((u) => u.id === current.user_id);
+            if (user) {
+                accumulator.push(displayUsername(user, teammateNameDisplay));
+            }
+        }
+        return accumulator;
+    }, []);
+
+    if (currentUserReacted) {
+        users.unshift(Utils.localizeMessage('reaction.you', 'You'));
+    }
+
+    return {currentUserReacted, users};
 }

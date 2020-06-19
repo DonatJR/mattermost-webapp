@@ -65,7 +65,7 @@ describe('components/ChangeURLModal', () => {
         const wrapper = mountWithIntl(
             <ChangeURLModal {...baseProps}/>
         );
-        const refURLInput = wrapper.ref('urlinput');
+        const refURLInput = wrapper.find('input[type="text"]').instance();
         refURLInput.value = 'urlexample';
 
         wrapper.instance().onSubmit({preventDefault: jest.fn()});
@@ -78,7 +78,7 @@ describe('components/ChangeURLModal', () => {
         const wrapper = mountWithIntl(
             <ChangeURLModal {...baseProps}/>
         );
-        const refURLInput = wrapper.ref('urlinput');
+        const refURLInput = wrapper.find('input[type="text"]').instance();
         refURLInput.value = value;
 
         wrapper.instance().onSubmit({preventDefault: jest.fn()});
@@ -170,5 +170,28 @@ describe('components/ChangeURLModal', () => {
             'change_url.noUnderscore',
             'URL can not contain two underscores in a row.'
         );
+    });
+
+    test('should update current url when not editing', () => {
+        const wrapper = mountWithIntl(
+            <ChangeURLModal {...baseProps}/>
+        );
+
+        const url = 'url_1';
+        wrapper.setProps({...baseProps, currentURL: url});
+
+        expect(wrapper.state('currentURL')).toEqual(url);
+    });
+
+    test('should not update current url when editing', () => {
+        const wrapper = mountWithIntl(
+            <ChangeURLModal {...baseProps}/>
+        );
+
+        const url = 'url_1';
+        wrapper.setState({userEdit: true});
+        wrapper.setProps({...baseProps, currentURL: url});
+
+        expect(wrapper.state('currentURL')).toEqual('');
     });
 });

@@ -1,14 +1,62 @@
 @charset 'UTF-8';
 @import 'compass/css3/transition';
 
+.app__body .popover.channel-header__popover {
+    box-shadow: none;
+}
+
+.header-popover-text-measurer {
+    position: absolute;
+    visibility: hidden;
+    height: auto;
+    width: auto;
+    white-space: nowrap;
+}
+
+
 .popover {
     @include border-radius($border-rad * 2);
     color: lighten($black, 25%);
     font-family: inherit;
     padding: 0;
 
+    .app__body & {
+        border: 1px solid v(center-channel-color-08);
+    }
+
     &.channel-header__popover {
         z-index: 999;
+        margin-left: -4px;
+        font-size: 12px;
+
+        &.chanel-header__popover--lhs_offset {
+            margin-left: 61px;
+
+            &.chanel-header__popover--new_sidebar {
+                margin-left: 81px;
+            }
+        }
+
+        &.chanel-header__popover--new_sidebar {
+            margin-left: 16px;
+        }
+
+        .popover-content {
+            padding: 1px 3px;
+
+            p {
+                white-space: normal;
+                word-break: normal;
+    
+                &:last-child {
+                    margin-bottom: 0;
+                }
+            }
+        }
+
+        &.bottom {
+            margin-top: -11px;
+        }
     }
 
     &.bottom,
@@ -49,6 +97,7 @@
         overflow: hidden;
         padding: 8px 10px;
         text-overflow: ellipsis;
+        border-color: v(center-channel-color-08);
 
         > span {
             display: flex;
@@ -121,13 +170,50 @@
     white-space: nowrap;
 }
 
-#user-profile-popover .user-popover__username:only-child,
-#user-profile-popover .user-popover__username:only-child > a{
+.user-profile-popover .user-popover__username:only-child,
+.user-profile-popover .user-popover__username:only-child > a{
     max-width: 100%;
 }
-#user-profile-popover .Avatar {
+.user-profile-popover .Avatar {
     margin: 5px auto;
     display: block;
+}
+
+.app__body {
+    .user-profile-popover {
+        border: 1px solid v(center-channel-color-20);
+        box-shadow: none !important;
+        background: transparent !important;
+
+        .popover-title {
+            border-bottom: 1px solid v(center-channel-color-20);
+            border-radius: $border-rad $border-rad 0 0;
+            background: v(center-channel-bg);
+            position: relative;
+
+            &:before {
+                position: absolute;
+                background: v(center-channel-color-05) !important;
+                content: '';
+                width: 100%;
+                height: 100%;
+                top: 0;
+                left: 0;
+            }
+
+            span {
+                z-index: 1;
+                position: relative;
+            }
+        }
+
+        .popover-content {
+            border-radius: 0 0 3px 3px;
+            border-top: none;
+            @include box-shadow(v(center-channel-color-10) 0px 17px 50px 0px, v(center-channel-color-10) 0px 12px 15px 0px);
+            background: v(center-channel-bg);
+        }
+    }
 }
 
 .user-popover__role {
@@ -162,6 +248,7 @@
         display: block;
 
         .popover-content {
+            max-height: 60vh;
             padding: 10px;
             position: relative;
             -webkit-overflow-scrolling: touch;
@@ -207,10 +294,6 @@
         padding: 6px 8px;
         text-overflow: ellipsis;
         white-space: nowrap;
-
-        &:hover {
-            background: alpha-color($black, .1);
-        }
 
         &.selected {
             background: alpha-color($black, .2);
@@ -357,10 +440,19 @@
                 margin-left: 12px;
 
                 button {
+                    @include border-radius(4px);
                     opacity: 0;
                     line-height: 0;
                     width: 2em;
                     height: 2em;
+
+                    &:hover {
+                        background-color: v(button-bg-20);
+                    }
+
+                    &:active {
+                        background-color: v(button-bg-30);
+                    }
 
                     &.a11y--focused {
                         opacity: 1;

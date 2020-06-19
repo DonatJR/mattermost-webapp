@@ -11,8 +11,10 @@ import {
     showFlaggedPosts,
     closeRightHandSide,
 } from 'actions/views/rhs';
-import {getRhsState, getSearchTerms, getIsSearchingTerm} from 'selectors/rhs';
-import {RHSStates} from 'utils/constants.jsx';
+import {autocompleteChannelsForSearch} from 'actions/channel_actions';
+import {autocompleteUsersInTeam} from 'actions/user_actions';
+import {getRhsState, getSearchTerms, getIsSearchingTerm, getIsRhsOpen} from 'selectors/rhs';
+import {RHSStates} from 'utils/constants';
 
 import SearchBar from './search_bar.jsx';
 
@@ -24,6 +26,7 @@ function mapStateToProps(state) {
         searchTerms: getSearchTerms(state),
         isMentionSearch: rhsState === RHSStates.MENTION,
         isFlaggedPosts: rhsState === RHSStates.FLAG,
+        isRhsOpen: getIsRhsOpen(state),
     };
 }
 
@@ -35,6 +38,8 @@ function mapDispatchToProps(dispatch) {
             showMentions,
             showFlaggedPosts,
             closeRightHandSide,
+            autocompleteChannelsForSearch,
+            autocompleteUsersInTeam,
         }, dispatch),
     };
 }

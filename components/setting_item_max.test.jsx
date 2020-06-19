@@ -4,10 +4,10 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import Constants from 'utils/constants.jsx';
+import Constants from 'utils/constants';
 import SettingItemMax from 'components/setting_item_max.jsx';
 
-describe('components/SettingItemMin', () => {
+describe('components/SettingItemMax', () => {
     const baseProps = {
         inputs: ['input_1'],
         clientError: '',

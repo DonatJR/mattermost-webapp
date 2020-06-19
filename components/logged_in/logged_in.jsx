@@ -10,13 +10,11 @@ import semver from 'semver';
 
 import * as GlobalActions from 'actions/global_actions.jsx';
 import * as WebSocketActions from 'actions/websocket_actions.jsx';
-import * as UserAgent from 'utils/user_agent.jsx';
-import LoadingScreen from 'components/loading_screen.jsx';
+import * as UserAgent from 'utils/user_agent';
+import LoadingScreen from 'components/loading_screen';
 import {getBrowserTimezone} from 'utils/timezone.jsx';
 import store from 'stores/redux_store.jsx';
 import WebSocketClient from 'client/web_websocket_client.jsx';
-import {browserHistory} from 'utils/browser_history';
-import {getChannelURL} from 'utils/utils';
 
 const dispatch = store.dispatch;
 const getState = store.getState;
@@ -32,6 +30,7 @@ export default class LoggedIn extends React.PureComponent {
         enableTimezone: PropTypes.bool.isRequired,
         actions: PropTypes.shape({
             autoUpdateTimezone: PropTypes.func.isRequired,
+            getChannelURLAction: PropTypes.func.isRequired,
         }).isRequired,
         showTermsOfService: PropTypes.bool.isRequired,
     }
@@ -212,7 +211,7 @@ export default class LoggedIn extends React.PureComponent {
             window.focus();
 
             // navigate to the appropriate channel
-            browserHistory.push(getChannelURL(channel, teamId));
+            this.props.actions.getChannelURLAction(channel, teamId);
             break;
         }
         }

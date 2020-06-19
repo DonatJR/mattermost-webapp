@@ -1,22 +1,22 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import $ from 'jquery';
 import PropTypes from 'prop-types';
 import React from 'react';
-import {Overlay, OverlayTrigger, Popover, Tooltip} from 'react-bootstrap';
+import {Overlay, Tooltip} from 'react-bootstrap';
 import {FormattedMessage} from 'react-intl';
 
 import {browserHistory} from 'utils/browser_history';
-import {canManageMembers} from 'utils/channel_utils.jsx';
-import {Constants} from 'utils/constants.jsx';
+import {Constants} from 'utils/constants';
 import * as Utils from 'utils/utils.jsx';
 import ChannelInviteModal from 'components/channel_invite_modal';
 import ChannelMembersModal from 'components/channel_members_modal';
+import OverlayTrigger from 'components/overlay_trigger';
 import MemberIcon from 'components/widgets/icons/member_icon';
+import Popover from 'components/widgets/popover';
 import TeamMembersModal from 'components/team_members_modal';
 
-import PopoverListMembersItem from './popover_list_members_item';
+import PopoverListMembersItem from 'components/popover_list_members/popover_list_members_item';
 
 export default class PopoverListMembers extends React.Component {
     static propTypes = {
@@ -26,11 +26,13 @@ export default class PopoverListMembers extends React.Component {
         memberCount: PropTypes.number,
         currentUserId: PropTypes.string.isRequired,
         teamUrl: PropTypes.string,
+        manageMembers: PropTypes.bool.isRequired,
         actions: PropTypes.shape({
             openModal: PropTypes.func.isRequired,
             loadProfilesAndStatusesInChannel: PropTypes.func.isRequired,
             openDirectChannelToUserId: PropTypes.func.isRequired,
         }).isRequired,
+        sortedUsers: PropTypes.array,
     };
 
     constructor(props) {
@@ -42,25 +44,20 @@ export default class PopoverListMembers extends React.Component {
             showTeamMembersModal: false,
             showChannelMembersModal: false,
             showChannelInviteModal: false,
-            sortedUsers: this.sortUsers(props.users, props.statuses),
+            users: props.users,
+            statuses: props.statuses,
         };
     }
 
-    componentDidUpdate() {
-        $('.member-list__popover .popover-content .more-modal__body').perfectScrollbar();
-    }
-
-    UNSAFE_componentWillReceiveProps(nextProps) { // eslint-disable-line camelcase
-        if (this.props.users !== nextProps.users || this.props.statuses !== nextProps.statuses) {
-            const sortedUsers = this.sortUsers(nextProps.users, nextProps.statuses);
-
-            this.setState({sortedUsers});
+    static getDerivedStateFromProps(nextProps, prevState) {
+        if (nextProps.users !== prevState.users || nextProps.statuses !== prevState.statuses) {
+            return {
+                users: nextProps.users,
+                statuses: nextProps.statuses,
+            };
         }
+        return null;
     }
-
-    sortUsers = (users, statuses) => {
-        return Utils.sortUsersByStatusAndDisplayName(users, statuses);
-    };
 
     handleShowDirectChannel = (user) => {
         const {actions} = this.props;
@@ -118,7 +115,7 @@ export default class PopoverListMembers extends React.Component {
     render() {
         const isDirectChannel = this.props.channel.type === Constants.DM_CHANNEL;
 
-        const items = this.state.sortedUsers.map((user) => (
+        const items = this.props.sortedUsers.map((user) => (
             <PopoverListMembersItem
                 key={user.id}
                 onItemClick={this.handleShowDirectChannel}
@@ -138,10 +135,9 @@ export default class PopoverListMembers extends React.Component {
                 />
             );
 
-            const manageMembers = canManageMembers(this.props.channel);
             const isDefaultChannel = this.props.channel.name === Constants.DEFAULT_CHANNEL;
 
-            if (isDefaultChannel || !manageMembers) {
+            if (isDefaultChannel || !this.props.manageMembers) {
                 membersName = (
                     <FormattedMessage
                         id='members_popover.viewMembers'
@@ -157,6 +153,7 @@ export default class PopoverListMembers extends React.Component {
                 >
                     <button
                         className='btn btn-link'
+                        data-testid='membersModal'
                         onClick={this.showMembersModal}
                     >
                         {membersName}
@@ -231,7 +228,7 @@ export default class PopoverListMembers extends React.Component {
                     <OverlayTrigger
                         delayShow={Constants.OVERLAY_TIME_DELAY}
                         placement='bottom'
-                        overlay={channelMembersTooltip}
+                        overlay={this.state.showPopover ? <></> : channelMembersTooltip}
                     >
                         <div>
                             <span

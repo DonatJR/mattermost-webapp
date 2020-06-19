@@ -7,7 +7,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import {FormattedMessage} from 'react-intl';
 
-import {ActionTypes, Constants} from 'utils/constants.jsx';
+import {ActionTypes, Constants} from 'utils/constants';
 import * as Utils from 'utils/utils.jsx';
 import AppDispatcher from 'dispatcher/app_dispatcher.jsx';
 import SettingItemMax from 'components/setting_item_max.jsx';
@@ -49,16 +49,14 @@ export default class ThemeSetting extends React.Component {
         }
     }
 
-    componentDidUpdate() {
+    componentDidUpdate(prevProps) {
+        if (prevProps.selected && !this.props.selected) {
+            this.resetFields();
+        }
+
         if (this.props.selected) {
             $('.color-btn').removeClass('active-border');
             $(ReactDOM.findDOMNode(this.refs[this.state.theme])).addClass('active-border');
-        }
-    }
-
-    UNSAFE_componentWillReceiveProps(nextProps) { // eslint-disable-line camelcase
-        if (this.props.selected && !nextProps.selected) {
-            this.resetFields();
         }
     }
 
@@ -257,7 +255,7 @@ export default class ThemeSetting extends React.Component {
                 inputs.push(
                     <div
                         key='importSlackThemeButton'
-                        className='padding-top'
+                        className='pt-2'
                     >
                         <button
                             id='slackImportTheme'
@@ -298,6 +296,7 @@ export default class ThemeSetting extends React.Component {
                     inputs={inputs}
                     submitExtra={allTeamsCheckbox}
                     submit={this.submitTheme}
+                    disableEnterSubmit={true}
                     saving={this.state.isSaving}
                     server_error={serverError}
                     width='full'

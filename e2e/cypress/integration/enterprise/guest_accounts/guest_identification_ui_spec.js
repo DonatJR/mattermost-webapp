@@ -19,6 +19,9 @@ let guestTeamId;
 
 describe('MM-18045 Verify Guest User Identification in different screens', () => {
     before(() => {
+        // * Check if server has license for Guest Accounts
+        cy.requireLicenseForFeature('GuestAccounts');
+
         // # Enable Guest Account Settings
         cy.apiUpdateConfig({
             GuestAccountsSettings: {
@@ -66,7 +69,7 @@ describe('MM-18045 Verify Guest User Identification in different screens', () =>
         // # Open Channel Members List
         cy.get('#member_popover').click();
         cy.get('#member-list-popover').should('be.visible').within(($el) => {
-            cy.wrap($el).getAllByTestId('popoverListMembersItem').each(($elChild) => {
+            cy.wrap($el).findAllByTestId('popoverListMembersItem').each(($elChild) => {
                 cy.wrap($elChild).invoke('attr', 'aria-label').then((username) => {
                     if (username === guest.username) {
                         // * Verify Guest Badge in Channel Members List
@@ -80,7 +83,7 @@ describe('MM-18045 Verify Guest User Identification in different screens', () =>
         cy.get('#channelHeaderDropdownIcon').click();
         cy.get('#channelViewMembers').click().wait(TIMEOUTS.TINY);
         cy.get('#channelMembersModal').should('be.visible').within(($el) => {
-            cy.wrap($el).getAllByTestId('userListItemDetails').each(($elChild) => {
+            cy.wrap($el).findAllByTestId('userListItemDetails').each(($elChild) => {
                 cy.wrap($elChild).invoke('text').then((username) => {
                     // * Verify Guest Badge in Channel Members List
                     if (username === guest.username) {
@@ -98,7 +101,7 @@ describe('MM-18045 Verify Guest User Identification in different screens', () =>
         cy.get('#sidebarHeaderDropdownButton').should('be.visible').click();
         cy.get('#viewMembers').click().wait(TIMEOUTS.SMALL);
         cy.get('#teamMembersModal').should('be.visible').within(($el) => {
-            cy.wrap($el).getAllByTestId('userListItemDetails').each(($elChild) => {
+            cy.wrap($el).findAllByTestId('userListItemDetails').each(($elChild) => {
                 cy.wrap($elChild).invoke('text').then((username) => {
                     // * Verify Guest Badge in Channel Members List
                     if (username === guest.username) {
@@ -164,7 +167,7 @@ describe('MM-18045 Verify Guest User Identification in different screens', () =>
 
         // * Verify if Guest badge is displayed for the guest user in the Switch Channel Dialog
         cy.get('#suggestionList').should('be.visible');
-        cy.getByTestId(guest.username).within(($el) => {
+        cy.findByTestId(guest.username).within(($el) => {
             cy.wrap($el).find('.Badge').should('be.visible').and('have.text', 'GUEST');
         });
 
@@ -218,7 +221,7 @@ describe('MM-18045 Verify Guest User Identification in different screens', () =>
 
         // * Verify Guest Badge is displayed at mention auto-complete
         cy.get('#suggestionList').should('be.visible');
-        cy.getByTestId(`mentionSuggestion_${guest.username}`).within(($el) => {
+        cy.findByTestId(`mentionSuggestion_${guest.username}`).within(($el) => {
             cy.wrap($el).find('.Badge').should('be.visible').and('have.text', 'GUEST');
         });
     });
@@ -234,6 +237,6 @@ describe('MM-18045 Verify Guest User Identification in different screens', () =>
         });
 
         // # Close and Clear the Search Autocomplete
-        cy.get('#searchClearButton').click();
+        cy.get('#searchFormContainer').find('.input-clear-x').click({force: true});
     });
 });

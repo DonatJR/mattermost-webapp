@@ -60,7 +60,6 @@ describe('components/FileUpload', () => {
 
         baseProps = {
             currentChannelId: 'channel_id',
-            intl: {},
             fileCount: 1,
             getTarget: emptyFunction,
             locale: General.DEFAULT_LOCALE,
@@ -96,6 +95,46 @@ describe('components/FileUpload', () => {
 
         wrapper.find('input').simulate('click');
         expect(baseProps.onClick).toHaveBeenCalledTimes(1);
+    });
+
+    test('should prevent event default and progogation on call of onTouchEnd on fileInput', () => {
+        const wrapper = shallowWithIntl(
+            <FileUpload {...baseProps}/>
+        );
+        const instance = wrapper.instance();
+        instance.handleLocalFileUploaded = jest.fn();
+        instance.fileInput = {
+            current: {
+                click: () => instance.handleLocalFileUploaded(),
+            },
+        };
+
+        const event = {stopPropagation: jest.fn(), preventDefault: jest.fn()};
+        wrapper.find('button').simulate('touchend', event);
+
+        expect(event.stopPropagation).toHaveBeenCalled();
+        expect(event.preventDefault).toHaveBeenCalled();
+        expect(instance.handleLocalFileUploaded).toHaveBeenCalled();
+    });
+
+    test('should prevent event default and progogation on call of onClick on fileInput', () => {
+        const wrapper = shallowWithIntl(
+            <FileUpload {...baseProps}/>
+        );
+        const instance = wrapper.instance();
+        instance.handleLocalFileUploaded = jest.fn();
+        instance.fileInput = {
+            current: {
+                click: () => instance.handleLocalFileUploaded(),
+            },
+        };
+
+        const event = {stopPropagation: jest.fn(), preventDefault: jest.fn()};
+        wrapper.find('button').simulate('click', event);
+
+        expect(event.stopPropagation).toHaveBeenCalled();
+        expect(event.preventDefault).toHaveBeenCalled();
+        expect(instance.handleLocalFileUploaded).toHaveBeenCalled();
     });
 
     test('should match state and call handleMaxUploadReached or props.onClick on handleLocalFileUploaded', () => {

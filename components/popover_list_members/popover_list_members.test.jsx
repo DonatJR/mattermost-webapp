@@ -4,7 +4,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import Constants from 'utils/constants.jsx';
+import Constants from 'utils/constants';
 import PopoverListMembers from 'components/popover_list_members/popover_list_members.jsx';
 
 jest.mock('utils/browser_history', () => {
@@ -43,9 +43,11 @@ describe('components/PopoverListMembers', () => {
         channel,
         statuses,
         users,
+        manageMembers: true,
         memberCount: 2,
         currentUserId: 'current_user_id',
         actions,
+        sortedUsers: [{id: 'member_id_1'}, {id: 'member_id_2'}],
     };
 
     test('should match snapshot', () => {

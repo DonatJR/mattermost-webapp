@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import {FormattedMessage} from 'react-intl';
 
-import Constants from 'utils/constants.jsx';
+import Constants from 'utils/constants';
 import * as PostUtils from 'utils/post_utils.jsx';
 import PostInfo from 'components/post_view/post_info';
 import UserProfile from 'components/user_profile';
@@ -74,6 +74,12 @@ export default class PostHeader extends React.PureComponent {
          * If the user that made the post is a guest.
          */
         isGuest: PropTypes.bool.isRequired,
+
+        /**
+         * To Check if the current post is last in the list
+         */
+        isLastPost: PropTypes.bool,
+
     }
 
     render() {
@@ -171,6 +177,7 @@ export default class PostHeader extends React.PureComponent {
                         isFirstReply={this.props.isFirstReply}
                         showTimeWithoutHover={this.props.showTimeWithoutHover}
                         hover={this.props.hover}
+                        isLastPost={this.props.isLastPost}
                     />
                 </div>
             </div>

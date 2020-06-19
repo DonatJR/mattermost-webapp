@@ -3,13 +3,26 @@
 
 import {batchActions} from 'redux-batched-actions';
 
-import {leaveChannel as leaveChannelRedux, joinChannel, unfavoriteChannel} from 'mattermost-redux/actions/channels';
+import {
+    leaveChannel as leaveChannelRedux,
+    joinChannel,
+    markChannelAsRead,
+    unfavoriteChannel,
+} from 'mattermost-redux/actions/channels';
 import * as PostActions from 'mattermost-redux/actions/posts';
 import {TeamTypes} from 'mattermost-redux/action_types';
 import {autocompleteUsers} from 'mattermost-redux/actions/users';
 import {selectTeam} from 'mattermost-redux/actions/teams';
 import {Posts} from 'mattermost-redux/constants';
-import {getChannel, getChannelsNameMapInCurrentTeam, getCurrentChannel, getRedirectChannelNameForTeam, getMyChannels, getMyChannelMemberships} from 'mattermost-redux/selectors/entities/channels';
+import {
+    getChannel,
+    getChannelsNameMapInCurrentTeam,
+    getCurrentChannel,
+    getRedirectChannelNameForTeam,
+    getMyChannels,
+    getMyChannelMemberships,
+    isManuallyUnread,
+} from 'mattermost-redux/selectors/entities/channels';
 import {getCurrentRelativeTeamUrl, getCurrentTeam, getCurrentTeamId} from 'mattermost-redux/selectors/entities/teams';
 import {getCurrentUserId, getUserByUsername} from 'mattermost-redux/selectors/entities/users';
 import {getMyPreferences} from 'mattermost-redux/selectors/entities/preferences';
@@ -22,7 +35,7 @@ import {getLastPostsApiTimeForChannel} from 'selectors/views/channel';
 import {getSocketStatus} from 'selectors/views/websocket';
 
 import {browserHistory} from 'utils/browser_history';
-import {Constants, ActionTypes, EventTypes, PostRequestTypes} from 'utils/constants.jsx';
+import {Constants, ActionTypes, EventTypes, PostRequestTypes} from 'utils/constants';
 import {isMobile} from 'utils/utils.jsx';
 import LocalStorageStore from 'stores/local_storage_store.jsx';
 
@@ -109,19 +122,20 @@ export function leaveChannel(channelId) {
         }
 
         const teamUrl = getCurrentRelativeTeamUrl(state);
-        LocalStorageStore.removePreviousChannelName(currentUserId, currentTeam.id);
+        LocalStorageStore.removePreviousChannelName(currentUserId, currentTeam.id, state);
         const {error} = await dispatch(leaveChannelRedux(channelId));
         if (error) {
             return {error};
         }
-        const prevChannelName = LocalStorageStore.getPreviousChannelName(currentUserId, currentTeam.id);
+        const prevChannelName = LocalStorageStore.getPreviousChannelName(currentUserId, currentTeam.id, state);
         const channelsInTeam = getChannelsNameMapInCurrentTeam(state);
         const prevChannel = getChannelByName(channelsInTeam, prevChannelName);
-        if (!prevChannel || !getMyChannelMemberships(getState())[prevChannel.id]) {
-            LocalStorageStore.removePreviousChannelName(currentUserId, currentTeam.id);
+        if (!prevChannel || !getMyChannelMemberships(state)[prevChannel.id]) {
+            LocalStorageStore.removePreviousChannelName(currentUserId, currentTeam.id, state);
         }
+
         if (getMyChannels(getState()).filter((c) => c.type === Constants.OPEN_CHANNEL || c.type === Constants.PRIVATE_CHANNEL).length === 0) {
-            LocalStorageStore.removePreviousChannelName(currentUserId, currentTeam.id);
+            LocalStorageStore.removePreviousChannelName(currentUserId, currentTeam.id, state);
             dispatch(selectTeam(''));
             dispatch({type: TeamTypes.LEAVE_TEAM, data: currentTeam});
             browserHistory.push('/');
@@ -132,6 +146,20 @@ export function leaveChannel(channelId) {
         return {
             data: true,
         };
+    };
+}
+
+export function leaveDirectChannel(channelName) {
+    return async (dispatch, getState) => {
+        const state = getState();
+        const currentUserId = getCurrentUserId(state);
+        const currentTeam = getCurrentTeam(state);
+        const previousChannel = LocalStorageStore.getPreviousChannelName(currentUserId, currentTeam.id, state);
+        const penultimateChannel = LocalStorageStore.getPenultimateChannelName(currentUserId, currentTeam.id, state);
+
+        if (channelName === previousChannel || channelName === penultimateChannel) {
+            LocalStorageStore.removePreviousChannelName(currentUserId, currentTeam.id, state);
+        }
     };
 }
 
@@ -301,5 +329,24 @@ export function syncPostsInChannel(channelId, since) {
 export function scrollPostListToBottom() {
     return () => {
         EventEmitter.emit(EventTypes.POST_LIST_SCROLL_TO_BOTTOM);
+    };
+}
+
+export function markChannelAsReadOnFocus(channelId) {
+    return (dispatch, getState) => {
+        if (isManuallyUnread(getState(), channelId)) {
+            return;
+        }
+
+        dispatch(markChannelAsRead(channelId));
+    };
+}
+
+export function updateToastStatus(status) {
+    return (dispatch) => {
+        dispatch({
+            type: ActionTypes.UPDATE_TOAST_STATUS,
+            data: status,
+        });
     };
 }

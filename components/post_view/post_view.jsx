@@ -4,7 +4,7 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 
-import LoadingScreen from 'components/loading_screen.jsx';
+import LoadingScreen from 'components/loading_screen';
 
 import PostList from './post_list';
 
@@ -38,6 +38,7 @@ export default class PostView extends React.PureComponent {
                 channelLoading: props.channelLoading,
             };
         }
+
         return null;
     }
 
@@ -67,13 +68,18 @@ export default class PostView extends React.PureComponent {
         }
 
         return (
-            <PostList
-                unreadChunkTimeStamp={this.state.unreadChunkTimeStamp}
-                channelId={this.props.channelId}
-                changeUnreadChunkTimeStamp={this.changeUnreadChunkTimeStamp}
-                focusedPostId={this.props.focusedPostId}
-                prevChannelId={this.props.prevChannelId}
-            />
+            <div
+                id='post-list'
+                role='main'
+            >
+                <PostList
+                    unreadChunkTimeStamp={this.state.unreadChunkTimeStamp}
+                    channelId={this.props.channelId}
+                    changeUnreadChunkTimeStamp={this.changeUnreadChunkTimeStamp}
+                    focusedPostId={this.props.focusedPostId}
+                    prevChannelId={this.props.prevChannelId}
+                />
+            </div>
         );
     }
 }

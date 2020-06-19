@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import {FormattedMessage} from 'react-intl';
 
-import AutosizeTextarea from 'components/autosize_textarea.jsx';
+import AutosizeTextarea from 'components/autosize_textarea';
 import PostMarkdown from 'components/post_markdown';
 import AtMentionProvider from 'components/suggestion/at_mention_provider';
 import ChannelMentionProvider from 'components/suggestion/channel_mention_provider.jsx';
@@ -15,7 +15,7 @@ import SuggestionBox from 'components/suggestion/suggestion_box.jsx';
 import SuggestionList from 'components/suggestion/suggestion_list.jsx';
 import * as Utils from 'utils/utils.jsx';
 
-export default class Textbox extends React.Component {
+export default class Textbox extends React.PureComponent {
     static propTypes = {
         id: PropTypes.string.isRequired,
         channelId: PropTypes.string,
@@ -26,6 +26,8 @@ export default class Textbox extends React.Component {
         onHeightChange: PropTypes.func,
         createMessage: PropTypes.string.isRequired,
         onKeyDown: PropTypes.func,
+        onMouseUp: PropTypes.func,
+        onKeyUp: PropTypes.func,
         onBlur: PropTypes.func,
         supportsCommands: PropTypes.bool.isRequired,
         handlePostError: PropTypes.func,
@@ -42,7 +44,9 @@ export default class Textbox extends React.Component {
         profilesNotInChannel: PropTypes.arrayOf(PropTypes.object).isRequired,
         actions: PropTypes.shape({
             autocompleteUsersInChannel: PropTypes.func.isRequired,
+            autocompleteChannels: PropTypes.func.isRequired,
         }),
+        useChannelMentions: PropTypes.bool.isRequired,
     };
 
     static defaultProps = {
@@ -60,8 +64,9 @@ export default class Textbox extends React.Component {
                 profilesInChannel: this.props.profilesInChannel,
                 profilesNotInChannel: this.props.profilesNotInChannel,
                 autocompleteUsersInChannel: (prefix) => this.props.actions.autocompleteUsersInChannel(prefix, props.channelId),
+                useChannelMentions: this.props.useChannelMentions,
             }),
-            new ChannelMentionProvider(),
+            new ChannelMentionProvider(props.actions.autocompleteChannels),
             new EmoticonProvider(),
         ];
 
@@ -70,16 +75,42 @@ export default class Textbox extends React.Component {
         }
 
         this.checkMessageLength(props.value);
+        this.wrapper = React.createRef();
     }
 
     handleChange = (e) => {
         this.props.onChange(e);
     }
 
+    updateSuggestions(prevProps) {
+        if (this.props.channelId !== prevProps.channelId ||
+            this.props.currentUserId !== prevProps.currentUserId ||
+            this.props.profilesInChannel !== prevProps.profilesInChannel ||
+            this.props.profilesNotInChannel !== prevProps.profilesNotInChannel) {
+            // Update channel id for AtMentionProvider.
+            const providers = this.suggestionProviders;
+            for (let i = 0; i < providers.length; i++) {
+                if (providers[i] instanceof AtMentionProvider) {
+                    providers[i].setProps({
+                        currentUserId: this.props.currentUserId,
+                        profilesInChannel: this.props.profilesInChannel,
+                        profilesNotInChannel: this.props.profilesNotInChannel,
+                        autocompleteUsersInChannel: (prefix) => this.props.actions.autocompleteUsersInChannel(prefix, this.props.channelId),
+                        useChannelMentions: this.props.useChannelMentions,
+                    });
+                }
+            }
+        }
+        if (prevProps.value !== this.props.value) {
+            this.checkMessageLength(this.props.value);
+        }
+    }
     componentDidUpdate(prevProps) {
         if (!prevProps.preview && this.props.preview) {
             this.refs.preview.focus();
         }
+
+        this.updateSuggestions(prevProps);
     }
 
     checkMessageLength = (message) => {
@@ -107,6 +138,18 @@ export default class Textbox extends React.Component {
         }
     }
 
+    handleMouseUp = (e) => {
+        if (this.props.onMouseUp) {
+            this.props.onMouseUp(e);
+        }
+    }
+
+    handleKeyUp = (e) => {
+        if (this.props.onKeyUp) {
+            this.props.onKeyUp(e);
+        }
+    }
+
     handleBlur = (e) => {
         if (this.props.onBlur) {
             this.props.onBlur(e);
@@ -117,6 +160,11 @@ export default class Textbox extends React.Component {
         if (this.props.onHeightChange) {
             this.props.onHeightChange(height, maxHeight);
         }
+    }
+
+    getInputBox = () => {
+        const textbox = this.refs.message.getTextbox();
+        return textbox;
     }
 
     focus = () => {
@@ -138,39 +186,20 @@ export default class Textbox extends React.Component {
         this.refs.message.recalculateSize();
     }
 
-    UNSAFE_componentWillReceiveProps(nextProps) { // eslint-disable-line camelcase
-        if (nextProps.channelId !== this.props.channelId ||
-            nextProps.currentUserId !== this.props.currentUserId ||
-            nextProps.profilesInChannel !== this.props.profilesInChannel ||
-            nextProps.profilesNotInChannel !== this.props.profilesNotInChannel) {
-            // Update channel id for AtMentionProvider.
-            const providers = this.suggestionProviders;
-            for (let i = 0; i < providers.length; i++) {
-                if (providers[i] instanceof AtMentionProvider) {
-                    providers[i].setProps({
-                        currentUserId: nextProps.currentUserId,
-                        profilesInChannel: nextProps.profilesInChannel,
-                        profilesNotInChannel: nextProps.profilesNotInChannel,
-                        autocompleteUsersInChannel: (prefix) => nextProps.actions.autocompleteUsersInChannel(prefix, nextProps.channelId),
-                    });
-                }
-            }
-        }
-        if (this.props.value !== nextProps.value) {
-            this.checkMessageLength(nextProps.value);
-        }
-    }
-
     render() {
         let preview = null;
 
         let textboxClassName = 'form-control custom-textarea';
         let textWrapperClass = 'textarea-wrapper';
+        let wrapperHeight;
         if (this.props.emojiEnabled) {
             textboxClassName += ' custom-textarea--emoji-picker';
         }
         if (this.props.badConnection) {
             textboxClassName += ' bad-connection';
+        }
+        if (this.wrapper.current) {
+            wrapperHeight = this.getInputBox().clientHeight;
         }
         if (this.props.preview) {
             textboxClassName += ' custom-textarea--preview';
@@ -195,7 +224,7 @@ export default class Textbox extends React.Component {
 
         return (
             <div
-                ref='wrapper'
+                ref={this.wrapper}
                 className={textWrapperClass}
             >
                 <SuggestionBox
@@ -207,6 +236,8 @@ export default class Textbox extends React.Component {
                     onChange={this.handleChange}
                     onKeyPress={this.props.onKeyPress}
                     onKeyDown={this.handleKeyDown}
+                    onMouseUp={this.handleMouseUp}
+                    onKeyUp={this.handleKeyUp}
                     onComposition={this.props.onComposition}
                     onBlur={this.handleBlur}
                     onHeightChange={this.handleHeightChange}
@@ -222,6 +253,7 @@ export default class Textbox extends React.Component {
                     disabled={this.props.disabled}
                     contextId={this.props.channelId}
                     listenForMentionKeyClick={this.props.listenForMentionKeyClick}
+                    wrapperHeight={wrapperHeight}
                 />
                 {preview}
             </div>

@@ -7,8 +7,8 @@ import {FormattedMessage} from 'react-intl';
 
 import {Emoji} from 'mattermost-redux/constants';
 
-import LoadingScreen from 'components/loading_screen.jsx';
-import SaveButton from 'components/save_button.jsx';
+import LoadingScreen from 'components/loading_screen';
+import SaveButton from 'components/save_button';
 import EmojiListItem from 'components/emoji/emoji_list_item';
 import NextIcon from 'components/widgets/icons/fa_next_icon';
 import PreviousIcon from 'components/widgets/icons/fa_previous_icon';
@@ -201,7 +201,7 @@ export default class EmojiList extends React.Component {
                             id='filtered_user_list.next'
                             defaultMessage='Next'
                         />
-                        <NextIcon additionalClassName='margin-left'/>
+                        <NextIcon additionalClassName='ml-2'/>
                     </span>
                 );
 
@@ -224,7 +224,7 @@ export default class EmojiList extends React.Component {
                         className='btn btn-link'
                         onClick={this.previousPage}
                     >
-                        <PreviousIcon additionalClassName='margin-right'/>
+                        <PreviousIcon additionalClassName='mr-2'/>
                         <FormattedMessage
                             id='filtered_user_list.prev'
                             defaultMessage='Previous'
@@ -297,7 +297,7 @@ export default class EmojiList extends React.Component {
                         </tbody>
                     </table>
                 </div>
-                <div className='filter-controls padding-top x2'>
+                <div className='filter-controls pt-3'>
                     {previousButton}
                     {nextButton}
                 </div>

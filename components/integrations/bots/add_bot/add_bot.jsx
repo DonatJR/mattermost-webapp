@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import {Link} from 'react-router-dom';
 import {FormattedMessage} from 'react-intl';
-import {OverlayTrigger, Tooltip} from 'react-bootstrap';
+import {Tooltip} from 'react-bootstrap';
 
 import * as UserUtils from 'mattermost-redux/utils/user_utils';
 import {General} from 'mattermost-redux/constants';
@@ -14,10 +14,11 @@ import BotDefaultIcon from 'images/bot_default_icon.png';
 
 import {browserHistory} from 'utils/browser_history';
 import BackstageHeader from 'components/backstage/components/backstage_header.jsx';
-import SpinnerButton from 'components/spinner_button.jsx';
+import OverlayTrigger from 'components/overlay_trigger';
+import SpinnerButton from 'components/spinner_button';
 import FormattedMarkdownMessage from 'components/formatted_markdown_message.jsx';
-import FormError from 'components/form_error.jsx';
-import {AcceptedProfileImageTypes, OVERLAY_TIME_DELAY} from 'utils/constants.jsx';
+import FormError from 'components/form_error';
+import {AcceptedProfileImageTypes, Constants} from 'utils/constants';
 import * as Utils from 'utils/utils.jsx';
 import * as FileUtils from 'utils/file_utils.jsx';
 
@@ -36,6 +37,11 @@ export default class AddBot extends React.Component {
         *  Bot to edit (if editing)
         */
         bot: PropTypes.object,
+
+        /**
+        *  Bot user
+        */
+        user: PropTypes.object,
 
         /**
         *  Roles of the bot to edit (if editing)
@@ -277,7 +283,7 @@ export default class AddBot extends React.Component {
                 return;
             }
         } else {
-            const usernameError = Utils.isValidUsername(bot.username);
+            const usernameError = Utils.isValidBotUsername(bot.username);
             if (usernameError) {
                 this.setState({
                     adding: false,
@@ -380,7 +386,7 @@ export default class AddBot extends React.Component {
         let imageURL = '';
         let removeImageIcon = (
             <OverlayTrigger
-                delayShow={OVERLAY_TIME_DELAY}
+                delayShow={Constants.OVERLAY_TIME_DELAY}
                 placement='right'
                 overlay={(
                     <Tooltip id='removeIcon'>
@@ -401,7 +407,11 @@ export default class AddBot extends React.Component {
         );
         let imageStyles = null;
         if (this.props.bot && !this.state.pictureFile) {
-            imageURL = Utils.imageURLForUser(this.props.bot.user_id);
+            if (this.props.user) {
+                imageURL = Utils.imageURLForUser(this.props.user.id, this.props.user.last_picture_update);
+            } else {
+                imageURL = Utils.imageURLForUser(this.props.bot.user_id);
+            }
         } else {
             imageURL = this.state.image;
             imageStyles = this.state.orientationStyles;
@@ -478,7 +488,7 @@ export default class AddBot extends React.Component {
                                 >
                                     <FormattedMessage
                                         id='bots.image.upload'
-                                        defaultMessage='Upload an image'
+                                        defaultMessage='Upload Image'
                                     />
                                     <input
                                         accept='.jpg,.png,.bmp'
@@ -562,12 +572,12 @@ export default class AddBot extends React.Component {
                                     <option
                                         value={roleOptionMember}
                                     >
-                                        {roleOptionMember}
+                                        {Utils.localizeMessage('bot.add.role.member', 'Member')}
                                     </option>
                                     <option
                                         value={roleOptionSystemAdmin}
                                     >
-                                        {roleOptionSystemAdmin}
+                                        {Utils.localizeMessage('bot.add.role.admin', 'System Admin')}
                                     </option>
                                 </select>
                                 <div className='form__help'>

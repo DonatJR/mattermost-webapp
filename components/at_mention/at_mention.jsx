@@ -9,7 +9,7 @@ import {displayUsername} from 'mattermost-redux/utils/user_utils';
 
 import ProfilePopover from 'components/profile_popover';
 
-import {popOverOverlayPosition} from 'utils/position_utils.jsx';
+import {popOverOverlayPosition} from 'utils/position_utils.tsx';
 const spaceRequiredForPopOver = 300;
 
 export default class AtMention extends React.PureComponent {
@@ -17,6 +17,7 @@ export default class AtMention extends React.PureComponent {
         children: PropTypes.node,
         currentUserId: PropTypes.string.isRequired,
         hasMention: PropTypes.bool,
+        disableHighlight: PropTypes.bool,
         isRHS: PropTypes.bool,
         mentionName: PropTypes.string.isRequired,
         teammateNameDisplay: PropTypes.string.isRequired,
@@ -26,30 +27,22 @@ export default class AtMention extends React.PureComponent {
     static defaultProps = {
         isRHS: false,
         hasMention: false,
+        disableHighlight: false,
     }
 
     constructor(props) {
         super(props);
 
         this.state = {
-            user: this.getUserFromMentionName(props),
             show: false,
         };
 
         this.overlayRef = React.createRef();
     }
 
-    UNSAFE_componentWillReceiveProps(nextProps) { // eslint-disable-line camelcase
-        if (nextProps.mentionName !== this.props.mentionName || nextProps.usersByUsername !== this.props.usersByUsername) {
-            this.setState({
-                user: this.getUserFromMentionName(nextProps),
-            });
-        }
-    }
-
     handleClick = (e) => {
         const targetBounds = this.overlayRef.current.getBoundingClientRect();
-        const placement = popOverOverlayPosition(targetBounds, window.innerHeight, {above: spaceRequiredForPopOver});
+        const placement = popOverOverlayPosition(targetBounds, window.innerHeight, spaceRequiredForPopOver);
 
         this.setState({target: e.target, show: !this.state.show, placement});
     }
@@ -79,15 +72,15 @@ export default class AtMention extends React.PureComponent {
     }
 
     render() {
-        if (!this.state.user) {
+        const user = this.getUserFromMentionName(this.props);
+        if (!user) {
             return <React.Fragment>{this.props.children}</React.Fragment>;
         }
 
-        const user = this.state.user;
         const suffix = this.props.mentionName.substring(user.username.length);
 
         let className = 'mention-link';
-        if (user.id === this.props.currentUserId) {
+        if (!this.props.disableHighlight && user.id === this.props.currentUserId) {
             className += ' mention--highlight';
         }
 
@@ -101,6 +94,7 @@ export default class AtMention extends React.PureComponent {
                     onHide={this.hideOverlay}
                 >
                     <ProfilePopover
+                        className='user-profile-popover'
                         userId={user.id}
                         src={Client4.getProfilePictureUrl(user.id, user.last_picture_update)}
                         isRHS={this.props.isRHS}

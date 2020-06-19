@@ -56,6 +56,16 @@ jobs:
           npm run mmjstool -- i18n extract-webapp --webapp-dir . --mobile-dir /tmp/fake-mobile-dir
           diff /tmp/en.json i18n/en.json
 
+  type-check:
+    executor:
+      name: default
+    working_directory: ~/mattermost/mattermost-webapp
+    steps:
+      - checkout
+      - *restore_cache
+      - run: |
+          npm run check-types
+
   test:
     executor:
       name: default
@@ -70,6 +80,7 @@ jobs:
   build:
     executor:
       name: default
+    resource_class: xlarge
     working_directory: ~/mattermost/mattermost-webapp
     steps:
       - checkout
@@ -84,6 +95,37 @@ jobs:
           root: ~/mattermost
           paths:
             - mattermost-webapp
+
+  build-storybook:
+    executor:
+      name: default
+    working_directory: ~/mattermost/mattermost-webapp
+    steps:
+      - checkout
+      - *restore_cache
+      - run: npm run build-storybook
+      - store_artifacts:
+          path: ~/mattermost/mattermost-webapp/storybook-static
+      - persist_to_workspace:
+          root: ~/mattermost
+          paths:
+            - mattermost-webapp
+
+  upload-storybook:
+    docker:
+      - image: circleci/python:3.6
+    working_directory: ~/mattermost/mattermost-webapp
+    steps:
+      - attach_workspace:
+          at: ~/mattermost/
+      - aws-s3/sync:
+          from: storybook-static
+          to: s3://alpha-storybook.mattermost.com/$(echo "${CIRCLE_BRANCH}" | sed 's/pull\//PR-/g')/
+          arguments: --cache-control no-cache
+      - aws-s3/sync:
+          from: storybook-static
+          to: s3://alpha-storybook.mattermost.com/commit/${CIRCLE_SHA1}/
+          arguments: --cache-control no-cache
 
   upload-s3:
     docker:
@@ -110,7 +152,7 @@ jobs:
           at: ~/mattermost/
       - run:
           command: |
-            curl -f -o server.tar.gz https://pr-builds.mattermost.com/mattermost-server/$(echo "${CIRCLE_BRANCH}" | sed 's/pull\//PR-/g')/mattermost-enterprise-linux-amd64.tar.gz || curl -f -o server.tar.gz https://releases.mattermost.com/mattermost-platform/release-5.16/mattermost-enterprise-linux-amd64.tar.gz
+            curl -f -o server.tar.gz https://pr-builds.mattermost.com/mattermost-server/$(echo "${CIRCLE_BRANCH}" | sed 's/pull\//PR-/g')/mattermost-enterprise-linux-amd64.tar.gz || curl -f -o server.tar.gz https://releases.mattermost.com/mattermost-platform/master/mattermost-enterprise-linux-amd64.tar.gz
 
             tar xf server.tar.gz
             rm -rf mattermost/client
@@ -155,13 +197,12 @@ workflows:
       - i18n-check:
           requires:
             - install
-      - test:
+      - type-check:
           requires:
-            - i18n-check
-            - lint
+            - install
       - build:
           requires:
-            - test
+            - install
       - upload-s3:
           context: mattermost-ci-pr-builds-s3
           requires:
@@ -174,3 +215,15 @@ workflows:
           context: matterbuild-docker
           requires:
             - prepare-docker-build
+      - build-storybook:
+          requires:
+            - build
+      - upload-storybook:
+          context: mattermost-s3-storybook-alpha
+          requires:
+            - build-storybook
+      - test:
+          requires:
+            - type-check
+            - i18n-check
+            - lint

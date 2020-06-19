@@ -16,6 +16,9 @@ let guest;
 
 describe('Guest Account - Guest User Experience', () => {
     before(() => {
+        // * Check if server has license for Guest Accounts
+        cy.requireLicenseForFeature('GuestAccounts');
+
         // # Enable Guest Account Settings
         cy.apiUpdateConfig({
             GuestAccountsSettings: {
@@ -29,7 +32,6 @@ describe('Guest Account - Guest User Experience', () => {
         // # Login as a guest user and go to /
         cy.loginAsNewGuestUser().then((userResponse) => {
             guest = userResponse;
-            cy.visit('/');
         });
     });
 
@@ -46,7 +48,7 @@ describe('Guest Account - Guest User Experience', () => {
         });
 
         // *Verify Reduced Options in LHS
-        const missingLHSOptions = ['#createPublicChannel', '#morePublicButton', '#createPrivateChannel'];
+        const missingLHSOptions = ['#createPublicChannel', "li[data-testid='morePublicButton']", '#createPrivateChannel'];
         missingLHSOptions.forEach((missingOption) => {
             cy.get(missingOption).should('not.exist');
         });
@@ -60,7 +62,7 @@ describe('Guest Account - Guest User Experience', () => {
         // * Verify list of Users and Guest Badge in Channel Members List
         cy.get('#member_popover').click();
         cy.get('#member-list-popover').should('be.visible').within(($el) => {
-            cy.wrap($el).getAllByTestId('popoverListMembersItem').should('have.length', 2).each(($elChild) => {
+            cy.wrap($el).findAllByTestId('popoverListMembersItem').should('have.length', 2).each(($elChild) => {
                 cy.wrap($elChild).invoke('attr', 'aria-label').then((username) => {
                     if (username === guest.username) {
                         cy.wrap($elChild).find('.Badge').should('be.visible').and('have.text', 'GUEST');
@@ -125,7 +127,7 @@ describe('Guest Account - Guest User Experience', () => {
         cy.get('#sidebarHeaderDropdownButton').should('be.visible').click();
 
         // *Verify Options in LHS are changed
-        const missingLHSOptions = ['#createPublicChannel', '#morePublicButton', '#createPrivateChannel'];
+        const missingLHSOptions = ['#createPublicChannel', "li[data-testid='morePublicButton']", '#createPrivateChannel'];
         missingLHSOptions.forEach((missingOption) => {
             cy.get(missingOption).should('be.visible');
         });
@@ -139,7 +141,7 @@ describe('Guest Account - Guest User Experience', () => {
         // * Verify Guest Badge is removed in Channel Members List
         cy.get('#member_popover').click();
         cy.get('#member-list-popover').should('be.visible').within(($el) => {
-            cy.wrap($el).getAllByTestId('popoverListMembersItem').should('have.length', 2).each(($elChild) => {
+            cy.wrap($el).findAllByTestId('popoverListMembersItem').should('have.length', 2).each(($elChild) => {
                 cy.wrap($elChild).invoke('attr', 'aria-label').then((username) => {
                     if (username === guest.username) {
                         cy.wrap($elChild).find('.Badge').should('not.exist');

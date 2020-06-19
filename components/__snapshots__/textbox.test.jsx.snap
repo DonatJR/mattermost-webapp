@@ -19,6 +19,8 @@ exports[`components/TextBox should match snapshot with required props 1`] = `
     onHeightChange={[Function]}
     onKeyDown={[Function]}
     onKeyPress={[Function]}
+    onKeyUp={[Function]}
+    onMouseUp={[Function]}
     openOnFocus={false}
     openWhenEmpty={false}
     placeholder="placeholder text"
@@ -48,8 +50,10 @@ exports[`components/TextBox should match snapshot with required props 1`] = `
             },
           ],
           "requestStarted": false,
+          "useChannelMentions": true,
         },
         ChannelMentionProvider {
+          "autocompleteChannels": [MockFunction],
           "disableDispatches": false,
           "lastCompletedWord": "",
           "lastPrefixTrimmed": "",
@@ -100,6 +104,8 @@ exports[`components/TextBox should throw error when new property is too long 1`]
     onHeightChange={[Function]}
     onKeyDown={[Function]}
     onKeyPress={[Function]}
+    onKeyUp={[Function]}
+    onMouseUp={[Function]}
     openOnFocus={false}
     openWhenEmpty={false}
     placeholder="placeholder text"
@@ -129,8 +135,10 @@ exports[`components/TextBox should throw error when new property is too long 1`]
             },
           ],
           "requestStarted": false,
+          "useChannelMentions": true,
         },
         ChannelMentionProvider {
+          "autocompleteChannels": [MockFunction],
           "disableDispatches": false,
           "lastCompletedWord": "",
           "lastPrefixTrimmed": "",
@@ -181,6 +189,8 @@ exports[`components/TextBox should throw error when value is too long 1`] = `
     onHeightChange={[Function]}
     onKeyDown={[Function]}
     onKeyPress={[Function]}
+    onKeyUp={[Function]}
+    onMouseUp={[Function]}
     openOnFocus={false}
     openWhenEmpty={false}
     placeholder="placeholder text"
@@ -210,8 +220,10 @@ exports[`components/TextBox should throw error when value is too long 1`] = `
             },
           ],
           "requestStarted": false,
+          "useChannelMentions": true,
         },
         ChannelMentionProvider {
+          "autocompleteChannels": [MockFunction],
           "disableDispatches": false,
           "lastCompletedWord": "",
           "lastPrefixTrimmed": "",

@@ -2,7 +2,7 @@
 // See LICENSE.txt for license information.
 
 // ***************************************************************
-// - [#] indicates a test step (e.g. 1. Go to a page)
+// - [#] indicates a test step (e.g. # Go to a page)
 // - [*] indicates an assertion (e.g. * Check the title)
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
@@ -11,7 +11,7 @@ describe('Search', () => {
     it('S14548 Search results Right-Hand-Side: Post a comment', () => {
         // # Login and navigate to the app
         cy.apiLogin('user-1');
-        cy.visit('/');
+        cy.visit('/ad-1/channels/town-square');
 
         const message = `asparagus${Date.now()}`;
         const comment = 'Replying to asparagus';
@@ -24,7 +24,7 @@ describe('Search', () => {
 
         // # Get last postId
         cy.getLastPostId().then((postId) => {
-            const postMessageText = `#postMessageText_${postId}`;
+            const postMessageText = `#rhsPostMessageText_${postId}`;
 
             // * Search results should have our original message
             cy.get('#search-items-container').find(postMessageText).should('have.text', `${message}`);
@@ -44,13 +44,14 @@ describe('Search', () => {
 
         // # Get the comment id
         cy.getLastPostId().then((commentId) => {
-            const commentText = `#postMessageText_${commentId}`;
+            const rhsCommentText = `#rhsPostMessageText_${commentId}`;
+            const mainCommentText = `#postMessageText_${commentId}`;
 
             // * Verify comment in RHS
-            cy.get('#rhsContainer').find(commentText).should('have.text', `${comment}`);
+            cy.get('#rhsContainer').find(rhsCommentText).should('have.text', `${comment}`);
 
             // * Verify comment main thread
-            cy.get('#postListContent').find(commentText).should('have.text', `${comment}`);
+            cy.get('#postListContent').find(mainCommentText).should('have.text', `${comment}`);
         });
     });
 });

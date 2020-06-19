@@ -97,9 +97,20 @@ export default class AtMentionSuggestion extends Suggestion {
                 <Avatar
                     size='xs'
                     username={user && user.username}
-                    url={Utils.imageURLForUser(user)}
+                    url={Utils.imageURLForUser(user.id, user.last_picture_update)}
                 />
             );
+        }
+
+        let youElement = null;
+        if (user.isCurrentUser) {
+            youElement =
+            (<span className='mention__you'>
+                <FormattedMessage
+                    id='suggestion.user.isCurrent'
+                    defaultMessage='(you)'
+                />
+            </span>);
         }
 
         let className = 'mentions__name';
@@ -112,6 +123,7 @@ export default class AtMentionSuggestion extends Suggestion {
                 className={className}
                 data-testid={`mentionSuggestion_${username}`}
                 onClick={this.handleClick}
+                onMouseMove={this.handleMouseMove}
                 {...Suggestion.baseProps}
             >
                 {icon}
@@ -126,6 +138,7 @@ export default class AtMentionSuggestion extends Suggestion {
                     {' '}
                     {description}
                 </span>
+                {youElement}
                 <GuestBadge
                     show={Utils.isGuest(user)}
                     className='badge-autocomplete'

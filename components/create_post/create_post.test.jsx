@@ -4,11 +4,11 @@
 import React from 'react';
 import {Posts} from 'mattermost-redux/constants';
 
-import {shallowWithIntl} from 'tests/helpers/intl-test-helper.jsx';
+import {shallowWithIntl} from 'tests/helpers/intl-test-helper';
 import * as GlobalActions from 'actions/global_actions.jsx';
 import EmojiMap from 'utils/emoji_map';
 
-import Constants, {StoragePrefixes, ModalIdentifiers} from 'utils/constants.jsx';
+import Constants, {StoragePrefixes, ModalIdentifiers} from 'utils/constants';
 import * as Utils from 'utils/utils.jsx';
 
 import CreatePost from 'components/create_post/create_post.jsx';
@@ -134,12 +134,23 @@ function createPost({
             emojiMap={emojiMap}
             badConnection={false}
             isTimezoneEnabled={false}
+            canPost={true}
+            useChannelMentions={true}
         />
     );
 }
 /* eslint-enable react/prop-types */
 
 describe('components/create_post', () => {
+    jest.useFakeTimers();
+    beforeEach(() => {
+        jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => setTimeout(cb, 16));
+    });
+
+    afterEach(() => {
+        window.requestAnimationFrame.mockRestore();
+    });
+
     it('should match snapshot, init', () => {
         const wrapper = shallowWithIntl(createPost({}));
 
@@ -197,6 +208,13 @@ describe('components/create_post', () => {
 
     it('Check for emoji click message states', () => {
         const wrapper = shallowWithIntl(createPost());
+        const mockImpl = () => {
+            return {
+                setSelectionRange: jest.fn(),
+                focus: jest.fn(),
+            };
+        };
+        wrapper.instance().refs = {textbox: {getWrappedInstance: () => ({getInputBox: jest.fn(mockImpl), focus: jest.fn(), blur: jest.fn()})}};
 
         wrapper.find('.emoji-picker__container').simulate('click');
         expect(wrapper.state('showEmojiPicker')).toBe(true);
@@ -206,6 +224,7 @@ describe('components/create_post', () => {
 
         wrapper.setState({
             message: 'test',
+            caretPosition: 'test'.length, // cursor is at the end
         });
 
         wrapper.instance().handleEmojiClick({name: 'smile'});
@@ -216,7 +235,7 @@ describe('components/create_post', () => {
         });
 
         wrapper.instance().handleEmojiClick({name: 'smile'});
-        expect(wrapper.state('message')).toBe('test :smile: ');
+        expect(wrapper.state('message')).toBe('test  :smile: ');
     });
 
     it('onChange textbox should call setDraft and change message state', () => {
@@ -237,6 +256,8 @@ describe('components/create_post', () => {
 
         const postTextbox = wrapper.find('#post_textbox');
         postTextbox.simulate('change', {target: {value: 'change'}});
+        expect(setDraft).not.toHaveBeenCalled();
+        jest.runAllTimers();
         expect(setDraft).toHaveBeenCalledWith(StoragePrefixes.DRAFT + currentChannelProp.id, draft);
     });
 
@@ -272,6 +293,66 @@ describe('components/create_post', () => {
 
         form.simulate('Submit', {preventDefault: jest.fn()});
         expect(wrapper.state('showConfirmModal')).toBe(false);
+    });
+
+    it('Should set mentionHighlightDisabled prop when useChannelMentions disabled before calling actions.onSubmitPost', async () => {
+        const onSubmitPost = jest.fn();
+        const wrapper = shallowWithIntl(createPost({
+            actions: {
+                ...actionsProp,
+                onSubmitPost,
+            },
+        }));
+
+        wrapper.setProps({
+            useChannelMentions: false,
+        });
+
+        const post = {message: 'message with @here mention'};
+        await wrapper.instance().sendMessage(post);
+
+        expect(onSubmitPost).toHaveBeenCalledTimes(1);
+        expect(onSubmitPost.mock.calls[0][0]).toEqual({...post, props: {mentionHighlightDisabled: true}});
+    });
+
+    it('Should not set mentionHighlightDisabled prop when useChannelMentions enabled before calling actions.onSubmitPost', async () => {
+        const onSubmitPost = jest.fn();
+        const wrapper = shallowWithIntl(createPost({
+            actions: {
+                ...actionsProp,
+                onSubmitPost,
+            },
+        }));
+
+        wrapper.setProps({
+            useChannelMentions: true,
+        });
+
+        const post = {message: 'message with @here mention'};
+        await wrapper.instance().sendMessage(post);
+
+        expect(onSubmitPost).toHaveBeenCalledTimes(1);
+        expect(onSubmitPost.mock.calls[0][0]).toEqual(post);
+    });
+
+    it('Should not set mentionHighlightDisabled prop when useChannelMentions disabled but message does not contain channel metion before calling actions.onSubmitPost', async () => {
+        const onSubmitPost = jest.fn();
+        const wrapper = shallowWithIntl(createPost({
+            actions: {
+                ...actionsProp,
+                onSubmitPost,
+            },
+        }));
+
+        wrapper.setProps({
+            useChannelMentions: false,
+        });
+
+        const post = {message: 'message without mention'};
+        await wrapper.instance().sendMessage(post);
+
+        expect(onSubmitPost).toHaveBeenCalledTimes(1);
+        expect(onSubmitPost.mock.calls[0][0]).toEqual(post);
     });
 
     it('onSubmit test for @all with timezones', () => {
@@ -534,7 +615,6 @@ describe('components/create_post', () => {
 
         instance.handleFileUploadComplete(fileInfos, clientIds, currentChannelProp.id);
         expect(setDraft).toHaveBeenCalledWith(StoragePrefixes.DRAFT + currentChannelProp.id, expectedDraft);
-        expect(wrapper.state('enableSendButton')).toBe(true);
     });
 
     it('check for handleUploadError callback', () => {
@@ -607,7 +687,6 @@ describe('components/create_post', () => {
         expect(setDraft).toHaveBeenCalledTimes(1);
         expect(setDraft).toHaveBeenCalledWith(StoragePrefixes.DRAFT + currentChannelProp.id, draftProp);
         expect(instance.handleFileUploadChange).toHaveBeenCalledTimes(1);
-        expect(wrapper.state('enableSendButton')).toBe(false);
     });
 
     it('Should call Shortcut modal on FORWARD_SLASH+cntrl/meta', () => {
@@ -769,6 +848,11 @@ describe('components/create_post', () => {
         expect(wrapper).toMatchSnapshot();
     });
 
+    it('should match snapshot when cannot post', () => {
+        const wrapper = shallowWithIntl(createPost({canPost: false}));
+        expect(wrapper).toMatchSnapshot();
+    });
+
     it('should match snapshot when file upload disabled', () => {
         const wrapper = shallowWithIntl(createPost({canUploadFiles: false}));
         expect(wrapper).toMatchSnapshot();
@@ -858,6 +942,13 @@ describe('components/create_post', () => {
 
     it('should be able to format a pasted markdown table', () => {
         const wrapper = shallowWithIntl(createPost());
+        const mockImpl = () => {
+            return {
+                setSelectionRange: jest.fn(),
+                focus: jest.fn(),
+            };
+        };
+        wrapper.instance().refs = {textbox: {getWrappedInstance: () => ({getInputBox: jest.fn(mockImpl), focus: jest.fn(), blur: jest.fn()})}};
 
         const event = {
             target: {
@@ -879,10 +970,10 @@ describe('components/create_post', () => {
         expect(wrapper.state('message')).toBe(markdownTable);
     });
 
-    it('should be preserve message when pasting a markdown table', () => {
+    it('should preserve the original message after pasting a markdown table', () => {
         const wrapper = shallowWithIntl(createPost());
 
-        const message = 'message';
+        const message = 'original message';
         wrapper.setState({message});
 
         const event = {
@@ -904,5 +995,96 @@ describe('components/create_post', () => {
 
         wrapper.instance().pasteHandler(event);
         expect(wrapper.state('message')).toBe(expectedMessage);
+    });
+
+    it('should be able to format a github codeblock (pasted as a table)', () => {
+        const wrapper = shallowWithIntl(createPost());
+        const mockImpl = () => {
+            return {
+                setSelectionRange: jest.fn(),
+                focus: jest.fn(),
+            };
+        };
+        wrapper.instance().refs = {textbox: {getWrappedInstance: () => ({getInputBox: jest.fn(mockImpl), focus: jest.fn(), blur: jest.fn()})}};
+
+        const event = {
+            target: {
+                id: 'post_textbox',
+            },
+            preventDefault: jest.fn(),
+            clipboardData: {
+                items: [1],
+                types: ['text/plain', 'text/html'],
+                getData: (type) => {
+                    if (type === 'text/plain') {
+                        return '// a javascript codeblock example\nif (1 > 0) {\n  return \'condition is true\';\n}';
+                    }
+                    return '<table class="highlight tab-size js-file-line-container" data-tab-size="8"><tbody><tr><td id="LC1" class="blob-code blob-code-inner js-file-line"><span class="pl-c"><span class="pl-c">//</span> a javascript codeblock example</span></td></tr><tr><td id="L2" class="blob-num js-line-number" data-line-number="2">&nbsp;</td><td id="LC2" class="blob-code blob-code-inner js-file-line"><span class="pl-k">if</span> (<span class="pl-c1">1</span> <span class="pl-k">&gt;</span> <span class="pl-c1">0</span>) {</td></tr><tr><td id="L3" class="blob-num js-line-number" data-line-number="3">&nbsp;</td><td id="LC3" class="blob-code blob-code-inner js-file-line"><span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">\'</span>condition is true<span class="pl-pds">\'</span></span>);</td></tr><tr><td id="L4" class="blob-num js-line-number" data-line-number="4">&nbsp;</td><td id="LC4" class="blob-code blob-code-inner js-file-line">}</td></tr></tbody></table>';
+                },
+            },
+        };
+
+        const codeBlockMarkdown = "```\n// a javascript codeblock example\nif (1 > 0) {\n  return 'condition is true';\n}\n```";
+
+        wrapper.instance().pasteHandler(event);
+        expect(wrapper.state('message')).toBe(codeBlockMarkdown);
+    });
+
+    it('should be able to format a github codeblock (pasted as a table) with existing draft post', () => {
+        const wrapper = shallowWithIntl(createPost());
+        const mockImpl = () => {
+            return {
+                setSelectionRange: jest.fn(),
+                focus: jest.fn(),
+            };
+        };
+        wrapper.instance().refs = {textbox: {getWrappedInstance: () => ({getInputBox: jest.fn(mockImpl), focus: jest.fn(), blur: jest.fn()})}};
+        wrapper.setState({
+            message: 'test',
+            caretPosition: 'test'.length, // cursor is at the end
+        });
+
+        const event = {
+            target: {
+                id: 'post_textbox',
+            },
+            preventDefault: jest.fn(),
+            clipboardData: {
+                items: [1],
+                types: ['text/plain', 'text/html'],
+                getData: (type) => {
+                    if (type === 'text/plain') {
+                        return '// a javascript codeblock example\nif (1 > 0) {\n  return \'condition is true\';\n}';
+                    }
+                    return '<table class="highlight tab-size js-file-line-container" data-tab-size="8"><tbody><tr><td id="LC1" class="blob-code blob-code-inner js-file-line"><span class="pl-c"><span class="pl-c">//</span> a javascript codeblock example</span></td></tr><tr><td id="L2" class="blob-num js-line-number" data-line-number="2">&nbsp;</td><td id="LC2" class="blob-code blob-code-inner js-file-line"><span class="pl-k">if</span> (<span class="pl-c1">1</span> <span class="pl-k">&gt;</span> <span class="pl-c1">0</span>) {</td></tr><tr><td id="L3" class="blob-num js-line-number" data-line-number="3">&nbsp;</td><td id="LC3" class="blob-code blob-code-inner js-file-line"><span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">\'</span>condition is true<span class="pl-pds">\'</span></span>);</td></tr><tr><td id="L4" class="blob-num js-line-number" data-line-number="4">&nbsp;</td><td id="LC4" class="blob-code blob-code-inner js-file-line">}</td></tr></tbody></table>';
+                },
+            },
+        };
+
+        const codeBlockMarkdown = "test\n```\n// a javascript codeblock example\nif (1 > 0) {\n  return 'condition is true';\n}\n```";
+
+        wrapper.instance().pasteHandler(event);
+        expect(wrapper.state('message')).toBe(codeBlockMarkdown);
+    });
+
+    it('should not enable the save button when message empty', () => {
+        const wrapper = shallowWithIntl(createPost());
+        const saveButton = wrapper.find('.post-body__actions a');
+
+        expect(saveButton.hasClass('disabled')).toBe(true);
+    });
+
+    it('should enable the save button when message not empty', () => {
+        const wrapper = shallowWithIntl(createPost({draft: {...draftProp, message: 'a message'}}));
+        const saveButton = wrapper.find('.post-body__actions a');
+
+        expect(saveButton.hasClass('disabled')).toBe(false);
+    });
+
+    it('should enable the save button when a file is available for upload', () => {
+        const wrapper = shallowWithIntl(createPost({draft: {...draftProp, fileInfos: [{id: '1'}]}}));
+        const saveButton = wrapper.find('.post-body__actions a');
+
+        expect(saveButton.hasClass('disabled')).toBe(false);
     });
 });

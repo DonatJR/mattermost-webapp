@@ -2,7 +2,7 @@
 // See LICENSE.txt for license information.
 
 // ***************************************************************
-// - [#] indicates a test step (e.g. 1. Go to a page)
+// - [#] indicates a test step (e.g. # Go to a page)
 // - [*] indicates an assertion (e.g. * Check the title)
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
@@ -10,14 +10,14 @@
 import * as TIMEOUTS from '../../fixtures/timeouts';
 
 describe('Edit Message', () => {
-    beforeEach(() => {
+    before(() => {
         // # Login as "user-1"
         cy.apiLogin('user-1');
     });
 
     it('M13909 Escape should not close modal when an autocomplete drop down is in use', () => {
         // # and go to /
-        cy.visit('/');
+        cy.visit('/ad-1/channels/town-square');
 
         // # Post message "Hello"
         cy.postMessage('Hello World!');
@@ -70,7 +70,7 @@ describe('Edit Message', () => {
 
     it('M13482 Display correct timestamp for edited message', () => {
         // # and go to /
-        cy.visit('/');
+        cy.visit('/ad-1/channels/town-square');
 
         // # Post a message
         cy.postMessage('Checking timestamp');
@@ -79,7 +79,7 @@ describe('Edit Message', () => {
             // # Mouseover post to display the timestamp
             cy.get(`#post_${postId}`).trigger('mouseover');
 
-            cy.get(`#CENTER_time_${postId}`).find('#localDateTime').invoke('attr', 'title').then((originalTimeStamp) => {
+            cy.get(`#CENTER_time_${postId}`).find('time').invoke('attr', 'title').then((originalTimeStamp) => {
                 // # Click dot menu
                 cy.clickPostDotMenu(postId);
 
@@ -99,7 +99,7 @@ describe('Edit Message', () => {
                 cy.get(`#post_${postId}`).trigger('mouseover');
 
                 // * Current post timestamp should have not been changed by edition
-                cy.get(`#CENTER_time_${postId}`).find('#localDateTime').should('have.attr', 'title').and('equal', originalTimeStamp);
+                cy.get(`#CENTER_time_${postId}`).find('time').should('have.attr', 'title').and('equal', originalTimeStamp);
 
                 // # Open RHS by clicking the post comment icon
                 cy.clickPostCommentIcon(postId);
@@ -108,14 +108,14 @@ describe('Edit Message', () => {
                 cy.get('#rhsContainer').should('be.visible');
 
                 // * Check that the RHS timeStamp equals the original post timeStamp
-                cy.get(`#CENTER_time_${postId}`).find('#localDateTime').invoke('attr', 'title').should('be', originalTimeStamp);
+                cy.get(`#CENTER_time_${postId}`).find('time').invoke('attr', 'title').should('be', originalTimeStamp);
             });
         });
     });
 
     it('M15519 Open edit modal immediately after making a post when post is pending', () => {
         // # and go to /. We set fetch to null here so that we can intercept XHR network requests
-        cy.visit('/');
+        cy.visit('/ad-1/channels/town-square');
 
         // # Enter first message
         cy.postMessage('Hello');

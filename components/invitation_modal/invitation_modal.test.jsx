@@ -2,15 +2,14 @@
 // See LICENSE.txt for license information.
 
 import React from 'react';
-import {IntlProvider} from 'react-intl';
 import {shallow} from 'enzyme';
+
+import {mountWithIntl} from 'tests/helpers/intl-test-helper';
 
 import InvitationModal from './invitation_modal.jsx';
 
 describe('components/invitation_modal/InvitationModal', () => {
-    const intlProvider = new IntlProvider({locale: 'en', defaultLocale: 'en'}, {});
-    const {intl} = intlProvider.getChildContext();
-    const context = {router: {}, intl};
+    const context = {router: {}};
 
     const defaultProps = {
         show: true,
@@ -22,11 +21,14 @@ describe('components/invitation_modal/InvitationModal', () => {
         invitableChannels: [],
         canInviteGuests: true,
         canAddUsers: true,
+        emailInvitationsEnabled: true,
         actions: {
             closeModal: jest.fn(),
             sendGuestsInvites: jest.fn(),
             sendMembersInvites: jest.fn(),
             searchProfiles: jest.fn(),
+            searchChannels: jest.fn(),
+            getTeam: jest.fn(),
         },
     };
 
@@ -69,5 +71,30 @@ describe('components/invitation_modal/InvitationModal', () => {
             {context}
         );
         expect(wrapper).toMatchSnapshot();
+    });
+
+    test('should call actions.getTeam if invite_id is empty', () => {
+        const props = {...defaultProps};
+        props.currentTeam.invite_id = '';
+        const wrapper = shallow(
+            <InvitationModal {...props}/>,
+            {context}
+        );
+        wrapper.instance().goToMembers();
+
+        expect(props.actions.getTeam).toHaveBeenCalledTimes(1);
+        expect(props.actions.getTeam).toHaveBeenCalledWith(props.currentTeam.id);
+    });
+
+    test('should work properly with full inside (and with the reference to the modal)', () => {
+        const props = {...defaultProps};
+        props.currentTeam.invite_id = '';
+        const wrapper = mountWithIntl(
+            <InvitationModal {...props}/>
+        );
+        wrapper.instance().goToMembers();
+
+        expect(props.actions.getTeam).toHaveBeenCalledTimes(1);
+        expect(props.actions.getTeam).toHaveBeenCalledWith(props.currentTeam.id);
     });
 });

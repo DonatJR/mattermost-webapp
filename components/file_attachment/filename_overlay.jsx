@@ -3,9 +3,10 @@
 
 import PropTypes from 'prop-types';
 import React from 'react';
-import {OverlayTrigger, Tooltip} from 'react-bootstrap';
+import {Tooltip} from 'react-bootstrap';
 import {getFileDownloadUrl} from 'mattermost-redux/utils/file_utils';
 
+import OverlayTrigger from 'components/overlay_trigger';
 import AttachmentIcon from 'components/widgets/icons/attachment_icon';
 import {trimFilename} from 'utils/file_utils';
 import {localizeMessage} from 'utils/utils.jsx';
@@ -92,7 +93,7 @@ export default class FilenameOverlay extends React.PureComponent {
                             placement='top'
                             overlay={
                                 <Tooltip id='file-name__tooltip'>
-                                    {localizeMessage('view_image_popover.download', 'Download').toLowerCase()}
+                                    {localizeMessage('view_image_popover.download', 'Download')}
                                 </Tooltip>
                             }
                         >

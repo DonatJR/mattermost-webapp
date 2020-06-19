@@ -5,7 +5,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 import {Posts} from 'mattermost-redux/constants';
 
-import Constants from 'utils/constants.jsx';
+import Constants from 'utils/constants';
 import PostInfo from 'components/post_view/post_info/post_info.jsx';
 
 describe('components/post_view/PostInfo', () => {
@@ -40,9 +40,11 @@ describe('components/post_view/PostInfo', () => {
         hover: false,
         showTimeWithoutHover: false,
         enableEmojiPicker: false,
+        shortcutReactToLastPostEmittedFrom: '',
         actions: {
             removePost: jest.fn(),
         },
+        shouldShowDotMenu: true,
     };
 
     test('should match snapshot', () => {

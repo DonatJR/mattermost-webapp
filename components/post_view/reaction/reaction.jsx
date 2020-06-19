@@ -3,8 +3,10 @@
 
 import PropTypes from 'prop-types';
 import React from 'react';
-import {OverlayTrigger, Tooltip} from 'react-bootstrap';
+import {Tooltip} from 'react-bootstrap';
 import {FormattedMessage} from 'react-intl';
+
+import OverlayTrigger from 'components/overlay_trigger';
 
 import * as Utils from 'utils/utils.jsx';
 
@@ -78,6 +80,7 @@ export default class Reaction extends React.PureComponent {
              */
             removeReaction: PropTypes.func.isRequired,
         }),
+        sortedUsers: PropTypes.object.isRequired,
     }
 
     handleAddReaction = (e) => {
@@ -91,7 +94,7 @@ export default class Reaction extends React.PureComponent {
         this.props.actions.removeReaction(this.props.post.id, this.props.emojiName);
     }
 
-    loadMissingProfiles = () => {
+    loadMissingProfiles = async () => {
         const ids = this.props.reactions.map((reaction) => reaction.user_id);
         this.props.actions.getMissingProfilesByIds(ids);
     }
@@ -101,23 +104,9 @@ export default class Reaction extends React.PureComponent {
             return null;
         }
 
-        let currentUserReacted = false;
-        const users = [];
+        const {currentUserReacted, users} = this.props.sortedUsers;
+
         const otherUsersCount = this.props.otherUsersCount;
-        for (const user of this.props.profiles) {
-            if (user.id === this.props.currentUserId) {
-                currentUserReacted = true;
-            } else {
-                users.push(Utils.getDisplayNameByUser(user));
-            }
-        }
-
-        // Sort users in alphabetical order with "you" being first if the current user reacted
-        users.sort();
-        if (currentUserReacted) {
-            users.unshift(Utils.localizeMessage('reaction.you', 'You'));
-        }
-
         let names;
         if (otherUsersCount > 0) {
             if (users.length > 0) {
@@ -242,7 +231,7 @@ export default class Reaction extends React.PureComponent {
                 onClick={handleClick}
             >
                 <OverlayTrigger
-                    delayShow={1000}
+                    delayShow={500}
                     placement='top'
                     shouldUpdatePosition={true}
                     overlay={
@@ -254,7 +243,7 @@ export default class Reaction extends React.PureComponent {
                     }
                     onEnter={this.loadMissingProfiles}
                 >
-                    <span>
+                    <span className='d-flex align-items-center'>
                         <span
                             className='post-reaction__emoji emoticon'
                             style={{backgroundImage: 'url(' + this.props.emojiImageUrl + ')'}}

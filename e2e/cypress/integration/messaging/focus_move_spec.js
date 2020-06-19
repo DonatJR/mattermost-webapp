@@ -2,7 +2,7 @@
 // See LICENSE.txt for license information.
 
 // ***************************************************************
-// - [#] indicates a test step (e.g. 1. Go to a page)
+// - [#] indicates a test step (e.g. # Go to a page)
 // - [*] indicates an assertion (e.g. * Check the title)
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
@@ -14,7 +14,7 @@ function verifyFocusInAddChannelMemberModal() {
     cy.get('#channelHeaderTitle').click();
 
     // * The dropdown menu of the channel header should be visible;
-    cy.get('#channelHeaderDropdownMenu').should('be.visible');
+    cy.get('#channelLeaveChannel').should('be.visible');
 
     // # Click 'Add Members'
     cy.get('#channelAddMembers').click();
@@ -51,7 +51,7 @@ describe('Messaging', () => {
     });
 
     beforeEach(() => {
-        cy.visit('/');
+        cy.visit('/ad-1/channels/town-square');
     });
 
     it('M15406 - Focus move from Recent Mentions to main input box when a character key is selected', () => {
@@ -69,7 +69,7 @@ describe('Messaging', () => {
         cy.get('#post_textbox').should('be.focused');
 
         //#Click the @ icon to open the Recent mentions RHS to move the focus out of the main input box
-        cy.get('#channelHeaderMentionButton').click();
+        cy.get('#channelHeaderMentionButton').click({force: true});
         cy.get('#post_textbox').should('not.be.focused');
 
         //#Push a character key such as "B"
@@ -149,12 +149,6 @@ describe('Messaging', () => {
         });
     });
     it('M17455 - Focus does not move for non-character keys', () => {
-        //# Make sure main input is visible and focused
-        cy.get('#post_textbox').should('be.visible').and('be.focused');
-
-        //#Click anywhere in the body to move the focus out of the main input box
-        cy.get('body').click();
-
         //# Make sure main input is not focused
         cy.get('#post_textbox').should('not.be.focused');
 

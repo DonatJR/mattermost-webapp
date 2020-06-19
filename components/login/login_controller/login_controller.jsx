@@ -3,7 +3,7 @@
 
 import PropTypes from 'prop-types';
 import React from 'react';
-import {FormattedMessage, injectIntl, intlShape} from 'react-intl';
+import {FormattedMessage, injectIntl} from 'react-intl';
 import {Link} from 'react-router-dom';
 
 import {Client4} from 'mattermost-redux/client';
@@ -13,24 +13,24 @@ import LocalStorageStore from 'stores/local_storage_store';
 
 import {browserHistory} from 'utils/browser_history';
 import Constants from 'utils/constants.jsx';
-import messageHtmlToComponent from 'utils/message_html_to_component';
-import * as TextFormatting from 'utils/text_formatting.jsx';
+import {intlShape} from 'utils/react_intl';
 import * as Utils from 'utils/utils.jsx';
-import {showNotification} from 'utils/notifications.jsx';
+import {showNotification} from 'utils/notifications';
 import {t} from 'utils/i18n.jsx';
 
 import logoImage from 'images/logo.png';
 
 import SiteNameAndDescription from 'components/common/site_name_and_description';
 import AnnouncementBar from 'components/announcement_bar';
-import FormError from 'components/form_error.jsx';
+import FormError from 'components/form_error';
 import FormattedMarkdownMessage from 'components/formatted_markdown_message.jsx';
-import BackButton from 'components/common/back_button.jsx';
-import LoadingScreen from 'components/loading_screen.jsx';
+import BackButton from 'components/common/back_button';
+import LoadingScreen from 'components/loading_screen';
 import LoadingWrapper from 'components/widgets/loading/loading_wrapper';
 import SuccessIcon from 'components/widgets/icons/fa_success_icon';
 import WarningIcon from 'components/widgets/icons/fa_warning_icon';
 import LocalizedInput from 'components/localized_input/localized_input';
+import Markdown from 'components/markdown';
 
 import LoginMfa from '../login_mfa.jsx';
 
@@ -84,6 +84,9 @@ class LoginController extends React.Component {
             sessionExpired: false,
             brandImageError: false,
         };
+
+        this.loginIdInput = React.createRef();
+        this.passwordInput = React.createRef();
     }
 
     componentDidMount() {
@@ -99,7 +102,7 @@ class LoginController extends React.Component {
         const email = search.get('email');
 
         if (extra === Constants.SIGNIN_VERIFIED && email) {
-            this.refs.password.focus();
+            this.passwordInput.current.focus();
         }
 
         // Determine if the user was unexpectedly logged out.
@@ -191,16 +194,16 @@ class LoginController extends React.Component {
         // password managers don't always call onInput handlers for form fields so it's possible
         // for the state to get out of sync with what the user sees in the browser
         let loginId = this.state.loginId;
-        if (this.refs.loginId) {
-            loginId = this.refs.loginId.value;
+        if (this.loginIdInput.current) {
+            loginId = this.loginIdInput.current.value;
             if (loginId !== this.state.loginId) {
                 this.setState({loginId});
             }
         }
 
         let password = this.state.password;
-        if (this.refs.password) {
-            password = this.refs.password.value;
+        if (this.passwordInput.current) {
+            password = this.passwordInput.current.value;
             if (password !== this.state.password) {
                 this.setState({password});
             }
@@ -356,7 +359,6 @@ class LoginController extends React.Component {
     createCustomLogin = () => {
         if (this.props.enableCustomBrand) {
             const text = this.props.customBrandText || '';
-            const formattedText = TextFormatting.formatText(text);
             const brandImageUrl = Client4.getBrandImageUrl(0);
             const brandImageStyle = this.state.brandImageError ? {display: 'none'} : {};
 
@@ -369,7 +371,13 @@ class LoginController extends React.Component {
                         style={brandImageStyle}
                     />
                     <div>
-                        {messageHtmlToComponent(formattedText, false, {mentions: false, imagesMetadata: null})}
+                        <Markdown
+                            message={text}
+                            options={
+                                {mentions: false,
+                                    imagesMetadata: null}
+                            }
+                        />
                     </div>
                 </div>
             );
@@ -553,7 +561,7 @@ class LoginController extends React.Component {
                             <input
                                 id='loginId'
                                 className='form-control'
-                                ref='loginId'
+                                ref={this.loginIdInput}
                                 name='loginId'
                                 value={this.state.loginId}
                                 onChange={this.handleLoginIdChange}
@@ -568,7 +576,7 @@ class LoginController extends React.Component {
                                 id='loginPassword'
                                 type='password'
                                 className='form-control'
-                                ref='password'
+                                ref={this.passwordInput}
                                 name='password'
                                 value={this.state.password}
                                 onChange={this.handlePasswordChange}
@@ -635,7 +643,7 @@ class LoginController extends React.Component {
                     <Link to={'/reset_password'}>
                         <FormattedMessage
                             id='login.forgot'
-                            defaultMessage='I forgot my password'
+                            defaultMessage='I forgot my password.'
                         />
                     </Link>
                 </div>

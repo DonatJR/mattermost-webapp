@@ -19,7 +19,8 @@ import {
     isCurrentChannelReadOnly,
     getCurrentChannelStats,
 } from 'mattermost-redux/selectors/entities/channels';
-import {getCurrentTeamId} from 'mattermost-redux/selectors/entities/teams';
+import {getTeammateNameDisplaySetting, getNewSidebarPreference} from 'mattermost-redux/selectors/entities/preferences';
+import {getCurrentRelativeTeamUrl, getCurrentTeamId, getMyTeams} from 'mattermost-redux/selectors/entities/teams';
 import {
     getCurrentUser,
     getUser,
@@ -33,11 +34,12 @@ import {
     showFlaggedPosts,
     showPinnedPosts,
     showMentions,
+    openRHSSearch,
     closeRightHandSide,
-    updateRhsState,
 } from 'actions/views/rhs';
-import {getRhsState} from 'selectors/rhs';
+import {getIsRhsOpen, getRhsState} from 'selectors/rhs';
 import {isModalOpen} from 'selectors/views/modals';
+import {getAnnouncementBarCount} from 'selectors/views/announcement_bar';
 import {ModalIdentifiers} from 'utils/constants';
 
 import ChannelHeader from './channel_header';
@@ -48,6 +50,8 @@ function makeMapStateToProps() {
     return function mapStateToProps(state) {
         const channel = getCurrentChannel(state) || {};
         const user = getCurrentUser(state);
+        const teams = getMyTeams(state);
+        const hasMoreThanOneTeam = teams.length > 1;
 
         let dmUser;
         let gmMembers;
@@ -67,11 +71,17 @@ function makeMapStateToProps() {
             dmUser,
             gmMembers,
             rhsState: getRhsState(state),
+            rhsOpen: getIsRhsOpen(state),
             isFavorite: isCurrentChannelFavorite(state),
             isReadOnly: isCurrentChannelReadOnly(state),
             isMuted: isCurrentChannelMuted(state),
             isQuickSwitcherOpen: isModalOpen(state, ModalIdentifiers.QUICK_SWITCH),
             hasGuests: stats.guest_count > 0,
+            hasMoreThanOneTeam,
+            teammateNameDisplaySetting: getTeammateNameDisplaySetting(state),
+            currentRelativeTeamUrl: getCurrentRelativeTeamUrl(state),
+            newSideBarPreference: getNewSidebarPreference(state),
+            announcementBarCount: getAnnouncementBarCount(state)
         };
     };
 }
@@ -83,8 +93,8 @@ const mapDispatchToProps = (dispatch) => ({
         showFlaggedPosts,
         showPinnedPosts,
         showMentions,
+        openRHSSearch,
         closeRightHandSide,
-        updateRhsState,
         getCustomEmojisInText,
         updateChannelNotifyProps,
         goToLastViewedChannel,

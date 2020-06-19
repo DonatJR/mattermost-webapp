@@ -5,6 +5,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import Reaction from 'components/post_view/reaction/reaction.jsx';
+import {getSortedUsers} from 'utils/utils';
 
 describe('components/post_view/Reaction', () => {
     const post = {id: 'post_id_1'};
@@ -16,12 +17,13 @@ describe('components/post_view/Reaction', () => {
         getMissingProfilesByIds: () => {}, //eslint-disable-line no-empty-function
         removeReaction: () => {}, //eslint-disable-line no-empty-function
     };
+    const currentUserId = 'user_id_1';
 
     const baseProps = {
         canAddReaction: true,
         canRemoveReaction: true,
+        currentUserId,
         post,
-        currentUserId: 'user_id_1',
         emojiName,
         reactionCount: 2,
         profiles,
@@ -29,6 +31,12 @@ describe('components/post_view/Reaction', () => {
         reactions,
         emojiImageUrl: 'emoji_image_url',
         actions,
+        sortedUsers: getSortedUsers(
+            reactions,
+            currentUserId,
+            profiles,
+            'username'
+        ),
     };
 
     test('should match snapshot', () => {
@@ -44,6 +52,12 @@ describe('components/post_view/Reaction', () => {
             reactions: newReactions,
             profiles: newProfiles,
             otherUsersCount: 1,
+            sortedUsers: getSortedUsers(
+                newReactions,
+                currentUserId,
+                newProfiles,
+                'username'
+            ),
         };
         const wrapper = shallow(<Reaction {...props}/>);
         expect(wrapper).toMatchSnapshot();
@@ -62,7 +76,18 @@ describe('components/post_view/Reaction', () => {
     });
 
     test('should disable remove reaction when you do not have permissions', () => {
-        const props = {...baseProps, canRemoveReaction: false, currentUserId: 'user_id_2'};
+        const newCurrentUserId = 'user_id_2';
+        const props = {
+            ...baseProps,
+            canRemoveReaction: false,
+            currentUserId: newCurrentUserId,
+            sortedUsers: getSortedUsers(
+                reactions,
+                newCurrentUserId,
+                profiles,
+                'username'
+            ),
+        };
         const wrapper = shallow(<Reaction {...props}/>);
         expect(wrapper).toMatchSnapshot();
     });
