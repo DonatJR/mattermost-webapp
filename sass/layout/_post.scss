@@ -1176,6 +1176,46 @@
     }
 
     &.post--comment {
+        .cmbt-thread-color-1 {
+            border-left-color: rgba(74, 189, 172, 0.7) !important;
+        }
+
+        .cmbt-thread-color-2 {
+            border-left-color: rgba(252, 74, 26, 0.7) !important;
+        }
+
+        .cmbt-thread-color-3 {
+            border-left-color: rgba(247, 183, 51, 0.7) !important;
+        }
+
+        .cmbt-thread-color-4 {
+            border-left-color: rgba(126, 50, 177, 0.7) !important;
+        }
+
+        .cmbt-thread-color-5 {
+            border-left-color: rgba(60, 196, 124, 0.7) !important;
+        }
+
+        .cmbt-thread-color-6 {
+            border-left-color: rgba(91, 126, 163, 0.7) !important;
+        }
+
+        .cmbt-thread-color-7 {
+            border-left-color: rgba(250, 97, 126, 0.7) !important;
+        }
+
+        .cmbt-thread-color-8 {
+            border-left-color: rgba(57, 19, 196, 0.7) !important;
+        }
+
+        .cmbt-thread-color-9 {
+            border-left-color: rgba(244, 222, 203, 0.7) !important;
+        }
+
+        .cmbt-thread-color-10 {
+            border-left-color: rgba(175, 71, 60, 0.7) !important;
+        }
+
         .post__body {
             border-left: 4px solid $gray;
             padding-left: 7px;

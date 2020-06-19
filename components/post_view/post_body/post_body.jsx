@@ -3,7 +3,7 @@
 
 import PropTypes from 'prop-types';
 import React from 'react';
-import {Posts} from 'mattermost-redux/constants';
+import { Posts } from 'mattermost-redux/constants';
 
 import * as PostUtils from 'utils/post_utils.jsx';
 import * as Utils from 'utils/utils.jsx';
@@ -89,12 +89,12 @@ export default class PostBody extends React.PureComponent {
             () => {
                 const post = this.props.post;
                 if (post && post.id === post.pending_post_id) {
-                    this.setState({sending: true});
+                    this.setState({ sending: true });
                 }
             }
         );
 
-        this.state = {sending: false};
+        this.state = { sending: false };
     }
 
     componentDidMount() {
@@ -112,7 +112,7 @@ export default class PostBody extends React.PureComponent {
         const post = nextProps.post;
         if (post && post.id !== post.pending_post_id) {
             this.sendingAction.cancel();
-            this.setState({sending: false});
+            this.setState({ sending: false });
         }
     }
 
@@ -135,7 +135,7 @@ export default class PostBody extends React.PureComponent {
         let failedOptions;
         if (this.props.post.failed) {
             postClass += ' post--fail';
-            failedOptions = <FailedPostOptions post={this.props.post}/>;
+            failedOptions = <FailedPostOptions post={this.props.post} />;
         }
 
         if (PostUtils.isEdited(this.props.post)) {
@@ -159,7 +159,7 @@ export default class PostBody extends React.PureComponent {
         const messageWrapper = (
             <React.Fragment>
                 {failedOptions}
-                {this.state.sending && <LoadingSpinner/>}
+                {this.state.sending && <LoadingSpinner />}
                 <PostMessageView
                     post={this.props.post}
                     compactDisplay={this.props.compactDisplay}
@@ -195,12 +195,25 @@ export default class PostBody extends React.PureComponent {
             ephemeralPostClass = 'post--ephemeral';
         }
 
+        let borderLeftColorClass = "";
+        try {
+            if (this.props.post.parent_id && this.props.post.parent_id !== "") {
+                const newborderLeftColorIdx = PostUtils.getBorderLeftColor(
+                    post.parent_id,
+                    post.channel_id
+                );
+                borderLeftColorClass = `cmbt-thread-color-${newborderLeftColorIdx}`;
+            }
+        } catch (e) {
+            console.log("custom thread color error", e);
+        }
+
         return (
             <div>
                 {comment}
                 <div
                     id={`${post.id}_message`}
-                    className={`post__body ${mentionHighlightClass} ${ephemeralPostClass} ${postClass}`}
+                    className={`post__body ${mentionHighlightClass} ${ephemeralPostClass} ${postClass} ${borderLeftColorClass}`}
                 >
                     {messageWithAdditionalContent}
                     {fileAttachmentHolder}

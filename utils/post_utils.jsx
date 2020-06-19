@@ -1,28 +1,28 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {createSelector} from 'reselect';
+import { createSelector } from 'reselect';
 
-import {Client4} from 'mattermost-redux/client';
-import {getLicense, getConfig} from 'mattermost-redux/selectors/entities/general';
-import {haveIChannelPermission} from 'mattermost-redux/selectors/entities/roles';
-import {makeGetReactionsForPost} from 'mattermost-redux/selectors/entities/posts';
-import {get} from 'mattermost-redux/selectors/entities/preferences';
-import {makeGetDisplayName, getCurrentUserId} from 'mattermost-redux/selectors/entities/users';
-import {getChannel} from 'mattermost-redux/selectors/entities/channels';
-import {Permissions, Posts} from 'mattermost-redux/constants';
+import { Client4 } from 'mattermost-redux/client';
+import { getLicense, getConfig } from 'mattermost-redux/selectors/entities/general';
+import { haveIChannelPermission } from 'mattermost-redux/selectors/entities/roles';
+import { makeGetReactionsForPost } from 'mattermost-redux/selectors/entities/posts';
+import { get } from 'mattermost-redux/selectors/entities/preferences';
+import { makeGetDisplayName, getCurrentUserId } from 'mattermost-redux/selectors/entities/users';
+import { getChannel } from 'mattermost-redux/selectors/entities/channels';
+import { Permissions, Posts } from 'mattermost-redux/constants';
 import * as PostListUtils from 'mattermost-redux/utils/post_list';
-import {canEditPost as canEditPostRedux} from 'mattermost-redux/utils/post_utils';
+import { canEditPost as canEditPostRedux } from 'mattermost-redux/utils/post_utils';
 
-import {getEmojiMap} from 'selectors/emojis';
+import { getEmojiMap } from 'selectors/emojis';
 
 import store from 'stores/redux_store.jsx';
 
-import Constants, {PostListRowListIds, Preferences} from 'utils/constants.jsx';
-import {formatWithRenderer} from 'utils/markdown';
+import Constants, { PostListRowListIds, Preferences } from 'utils/constants.jsx';
+import { formatWithRenderer } from 'utils/markdown';
 import MentionableRenderer from 'utils/markdown/mentionable_renderer';
 import * as Utils from 'utils/utils.jsx';
-import {isMobile} from 'utils/user_agent.jsx';
+import { isMobile } from 'utils/user_agent.jsx';
 
 import * as Emoticons from './emoticons.jsx';
 
@@ -80,9 +80,9 @@ export function canDeletePost(post) {
     }
 
     if (isPostOwner(post)) {
-        return haveIChannelPermission(store.getState(), {channel: post.channel_id, team: channel && channel.team_id, permission: Permissions.DELETE_POST});
+        return haveIChannelPermission(store.getState(), { channel: post.channel_id, team: channel && channel.team_id, permission: Permissions.DELETE_POST });
     }
-    return haveIChannelPermission(store.getState(), {channel: post.channel_id, team: channel && channel.team_id, permission: Permissions.DELETE_OTHERS_POSTS});
+    return haveIChannelPermission(store.getState(), { channel: post.channel_id, team: channel && channel.team_id, permission: Permissions.DELETE_OTHERS_POSTS });
 }
 
 export function canEditPost(post) {
@@ -175,47 +175,47 @@ function canAutomaticallyCloseBackticks(message) {
         };
     }
 
-    return {allowSending: true};
+    return { allowSending: true };
 }
 
 function sendOnCtrlEnter(message, ctrlOrMetaKeyPressed, isSendMessageOnCtrlEnter) {
     const match = message.match(Constants.TRIPLE_BACK_TICKS);
     if (isSendMessageOnCtrlEnter && ctrlOrMetaKeyPressed && (!match || match.length % 2 === 0)) {
-        return {allowSending: true};
+        return { allowSending: true };
     } else if (!isSendMessageOnCtrlEnter && (!match || match.length % 2 === 0)) {
-        return {allowSending: true};
+        return { allowSending: true };
     } else if (ctrlOrMetaKeyPressed && match && match.length % 2 !== 0) {
         return canAutomaticallyCloseBackticks(message);
     }
 
-    return {allowSending: false};
+    return { allowSending: false };
 }
 
 export function postMessageOnKeyPress(event, message, sendMessageOnCtrlEnter, sendCodeBlockOnCtrlEnter, now = 0, lastChannelSwitchAt = 0) {
     if (!event) {
-        return {allowSending: false};
+        return { allowSending: false };
     }
 
     // Typing enter on mobile never sends.
     if (isMobile()) {
-        return {allowSending: false};
+        return { allowSending: false };
     }
 
     // Only ENTER sends, unless shift or alt key pressed.
     if (!Utils.isKeyPressed(event, Constants.KeyCodes.ENTER) || event.shiftKey || event.altKey) {
-        return {allowSending: false};
+        return { allowSending: false };
     }
 
     // Don't send if we just switched channels within a threshold.
     if (lastChannelSwitchAt > 0 && now > 0 && now - lastChannelSwitchAt <= CHANNEL_SWITCH_IGNORE_ENTER_THRESHOLD_MS) {
-        return {allowSending: false, ignoreKeyPress: true};
+        return { allowSending: false, ignoreKeyPress: true };
     }
 
     if (
         message.trim() === '' ||
         !(sendMessageOnCtrlEnter || sendCodeBlockOnCtrlEnter)
     ) {
-        return {allowSending: true};
+        return { allowSending: true };
     }
 
     const ctrlOrMetaKeyPressed = event.ctrlKey || event.metaKey;
@@ -226,7 +226,7 @@ export function postMessageOnKeyPress(event, message, sendMessageOnCtrlEnter, se
         return sendOnCtrlEnter(message, ctrlOrMetaKeyPressed, false);
     }
 
-    return {allowSending: false};
+    return { allowSending: false };
 }
 
 export function isErrorInvalidSlashCommand(error) {
@@ -334,7 +334,7 @@ export function makeCreateAriaLabelForPost() {
 }
 
 export function createAriaLabelForPost(post, author, isFlagged, reactions, intl) {
-    const {formatMessage, formatTime, formatDate} = intl;
+    const { formatMessage, formatTime, formatDate } = intl;
 
     const emojiMap = getEmojiMap(store.getState());
     let message = post.message;
@@ -358,23 +358,23 @@ export function createAriaLabelForPost(post, author, isFlagged, reactions, intl)
             id: 'post.ariaLabel.replyMessage',
             defaultMessage: '{authorName} at {time} {date} wrote a reply, {message}',
         },
-        {
-            authorName: author,
-            time: formatTime(post.create_at),
-            date: formatDate(post.create_at, {weekday: 'long', month: 'long', day: 'numeric'}),
-            message,
-        });
+            {
+                authorName: author,
+                time: formatTime(post.create_at),
+                date: formatDate(post.create_at, { weekday: 'long', month: 'long', day: 'numeric' }),
+                message,
+            });
     } else {
         ariaLabel = formatMessage({
             id: 'post.ariaLabel.message',
             defaultMessage: '{authorName} at {time} {date} wrote, {message}',
         },
-        {
-            authorName: author,
-            time: formatTime(post.create_at),
-            date: formatDate(post.create_at, {weekday: 'long', month: 'long', day: 'numeric'}),
-            message,
-        });
+            {
+                authorName: author,
+                time: formatTime(post.create_at),
+                date: formatDate(post.create_at, { weekday: 'long', month: 'long', day: 'numeric' }),
+                message,
+            });
     }
 
     let attachmentCount = 0;
@@ -391,9 +391,9 @@ export function createAriaLabelForPost(post, author, isFlagged, reactions, intl)
                 id: 'post.ariaLabel.attachmentMultiple',
                 defaultMessage: ', {attachmentCount} attachments',
             },
-            {
-                attachmentCount,
-            });
+                {
+                    attachmentCount,
+                });
         } else {
             ariaLabel += formatMessage({
                 id: 'post.ariaLabel.attachment',
@@ -417,9 +417,9 @@ export function createAriaLabelForPost(post, author, isFlagged, reactions, intl)
                 id: 'post.ariaLabel.reactionMultiple',
                 defaultMessage: ', {reactionCount} reactions',
             },
-            {
-                reactionCount: emojiNames.length,
-            });
+                {
+                    reactionCount: emojiNames.length,
+                });
         } else {
             ariaLabel += formatMessage({
                 id: 'post.ariaLabel.reaction',
@@ -449,3 +449,38 @@ export function createAriaLabelForPost(post, author, isFlagged, reactions, intl)
 
     return ariaLabel;
 }
+
+function* colorIndexGenerator() {
+    const startIndex = 1;
+    const endIndex = 10;
+    let current = startIndex - 1;
+
+    while (true) {
+        current++;
+
+        if (current > endIndex) {
+            current = startIndex;
+        }
+
+        yield current;
+    }
+}
+
+const messageColorIdxMap = new Map();
+const channelGeneratorMap = new Map();
+
+export const getBorderLeftColor = (parentId, channelId) => {
+    if (messageColorIdxMap.has(parentId)) {
+        return messageColorIdxMap.get(parentId);
+    }
+
+    if (!channelGeneratorMap.has(channelId)) {
+        channelGeneratorMap.set(channelId, colorIndexGenerator());
+    }
+
+    const indexGenerator = channelGeneratorMap.get(channelId);
+    const colorIdx = indexGenerator.next().value;
+    messageColorIdxMap.set(parentId, colorIdx);
+
+    return colorIdx;
+};
