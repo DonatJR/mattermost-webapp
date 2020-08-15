@@ -2,18 +2,37 @@
 // See LICENSE.txt for license information.
 
 // ***************************************************************
-// [number] indicates a test step (e.g. # Go to a page)
+// [#] indicates a test step (e.g. # Go to a page)
 // [*] indicates an assertion (e.g. * Check the title)
 // Use element ID when selecting an element. Create one if none.
 // ***************************************************************
 
+// Stage: @prod
+// Group: @messaging
+
 import * as TIMEOUTS from '../../fixtures/timeouts';
 
 describe('Permalink message edit', () => {
+    let testTeam;
+    let testUser;
+    let otherUser;
+
+    before(() => {
+        cy.apiInitSetup().then(({team, user}) => {
+            testTeam = team;
+            testUser = user;
+
+            cy.apiCreateUser().then(({user: user1}) => {
+                otherUser = user1;
+                cy.apiAddUserToTeam(testTeam.id, otherUser.id);
+            });
+        });
+    });
+
     it('M18717 - Edit a message in permalink view', () => {
-        // # Login as "user-1" and go to /
-        cy.apiLogin('user-1');
-        cy.visit('/ad-1/channels/town-square');
+        // # Login as test user and visit town-square
+        cy.apiLogin(testUser);
+        cy.visit(`/${testTeam.name}/channels/town-square`);
 
         const searchWord = `searchtest ${Date.now()}`;
 
@@ -27,6 +46,9 @@ describe('Permalink message edit', () => {
         cy.get('.search-item__jump').first().click();
 
         cy.getLastPostId().then((postId) => {
+            // # Check if url include the permalink
+            cy.url().should('include', `/${testTeam.name}/channels/town-square/${postId}`);
+
             // # Click on ... button of last post matching the searchWord
             cy.clickPostDotMenu(postId);
 
@@ -42,25 +64,27 @@ describe('Permalink message edit', () => {
             cy.get('#editButton').click();
 
             // # Check edited post
-            verifyEditedPermalink(postId, editedText);
+            verifyEditedPermalink(postId, editedText, testTeam);
 
-            // # Login as "user-2" and go to /
-            cy.apiLogin('user-2');
-            cy.visit('/ad-1/channels/town-square');
+            // # Login as other user, visit town-square and post any message
+            cy.apiLogin(otherUser);
+            cy.visit(`/${testTeam.name}/channels/town-square`);
+            cy.postMessage('hello');
 
             // # Find searchWord and verify edited post
-            cy.get('#searchBox').type(searchWord).type('{enter}');
+            cy.get('#searchBox').should('be.visible').type(searchWord).type('{enter}');
             cy.get('.search-item__jump').first().click();
-            verifyEditedPermalink(postId, editedText);
+
+            // # Check if url include the permalink
+            cy.url().should('include', `/${testTeam.name}/channels/town-square/${postId}`);
+
+            verifyEditedPermalink(postId, editedText, testTeam);
         });
     });
 
-    function verifyEditedPermalink(permalinkId, text) {
-        // # Check if url include the permalink
-        cy.url().should('include', `/ad-1/channels/town-square/${permalinkId}`);
-
+    function verifyEditedPermalink(permalinkId, text, team) {
         // * Check if url redirects back to parent path eventually
-        cy.wait(TIMEOUTS.SMALL).url().should('include', '/ad-1/channels/town-square').and('not.include', `/${permalinkId}`);
+        cy.wait(TIMEOUTS.FIVE_SEC).url().should('include', `/${team.name}/channels/town-square`).and('not.include', `/${permalinkId}`);
 
         // * Verify edited post
         cy.get(`#postMessageText_${permalinkId}`).should('have.text', text);

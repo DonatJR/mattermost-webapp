@@ -7,24 +7,30 @@
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
 
+// Group: @account_setting
+
 import * as TIMEOUTS from '../../../../fixtures/timeouts';
 
 describe('AS14318 Theme Colors - Color Picker', () => {
     before(() => {
-        // Login as user-1
-        cy.apiLogin('user-1');
+        // # Login as new user and visit town-square
+        cy.apiInitSetup({loginAfter: true}).then(({team}) => {
+            cy.visit(`/${team.name}/channels/town-square`);
+        });
     });
 
     beforeEach(() => {
         // Navigating to account settings
-        cy.toAccountSettingsModal(null, true);
+        cy.toAccountSettingsModal();
         cy.get('#displayButton').click();
         cy.get('#themeTitle').click();
         cy.get('#customThemes').click();
     });
 
-    after(() => {
-        cy.apiSaveThemePreference();
+    afterEach(() => {
+        // # Click "x" button to close Account Settings modal and then discard changes made
+        cy.get('#accountSettingsHeader > .close').click();
+        cy.findAllByText('Yes, Discard').click();
     });
 
     it('Should be able to use color picker input and change Sidebar theme color', () => {
@@ -35,7 +41,7 @@ describe('AS14318 Theme Colors - Color Picker', () => {
             '#sidebarBg-ChromePickerModal',
             '#sidebarBg-squareColorIconValue',
             '#bb123e',
-            'rgb(187, 18, 62)'
+            'rgb(187, 18, 62)',
         );
     });
 
@@ -47,7 +53,7 @@ describe('AS14318 Theme Colors - Color Picker', () => {
             '#centerChannelBg-ChromePickerModal',
             '#centerChannelBg-squareColorIconValue',
             '#ff8800',
-            'rgb(255, 136, 0)'
+            'rgb(255, 136, 0)',
         );
     });
 
@@ -59,7 +65,7 @@ describe('AS14318 Theme Colors - Color Picker', () => {
             '#linkColor-ChromePickerModal',
             '#linkColor-squareColorIconValue',
             '#ffe577',
-            'rgb(255, 229, 119)'
+            'rgb(255, 229, 119)',
         );
     });
 });
@@ -73,7 +79,7 @@ function verifyColorPickerChange(stylesText, iconButtonId, modalId, iconValueId,
 
     // # Enter hex value
     cy.get(modalId).within(() => {
-        cy.get('input').clear({force: true}).invoke('val', hexValue).wait(TIMEOUTS.TINY).type(' {backspace}{enter}', {force: true});
+        cy.get('input').clear({force: true}).invoke('val', hexValue).wait(TIMEOUTS.HALF_SEC).type(' {backspace}{enter}', {force: true});
     });
 
     // # Toggle theme colors the custom theme

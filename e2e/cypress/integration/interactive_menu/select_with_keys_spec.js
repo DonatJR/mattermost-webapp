@@ -7,6 +7,9 @@
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
 
+// Stage: @prod
+// Group: @interactive_menu
+
 /**
 * Note: This test requires webhook server running. Initiate `npm run start:webhook` to start.
 */
@@ -21,34 +24,16 @@ const searchOptions = [
     {text: 'Option 3', value: 'option3'},
 ];
 
-let channelId;
-let incomingWebhook;
-
 describe('Interactive Menu', () => {
+    let incomingWebhook;
+
     before(() => {
         cy.requireWebhookServer();
 
-        // Set required ServiceSettings
-        const newSettings = {
-            ServiceSettings: {
-                AllowedUntrustedInternalConnections: 'localhost',
-                EnablePostUsernameOverride: true,
-                EnablePostIconOverride: true,
-            },
-        };
-        cy.apiUpdateConfig(newSettings);
-
-        // # Login as sysadmin and ensure that teammate name display setting is set to default 'username'
-        cy.apiLogin('sysadmin');
-        cy.apiSaveTeammateNameDisplayPreference('username');
-        cy.apiSaveMessageDisplayPreference('clean');
-
         // # Create and visit new channel and create incoming webhook
-        cy.createAndVisitNewChannel().then((channel) => {
-            channelId = channel.id;
-
+        cy.apiInitSetup().then(({team, channel}) => {
             const newIncomingHook = {
-                channel_id: channelId,
+                channel_id: channel.id,
                 channel_locked: true,
                 description: 'Incoming webhook interactive menu',
                 display_name: 'menuIn' + Date.now(),
@@ -57,6 +42,8 @@ describe('Interactive Menu', () => {
             cy.apiCreateWebhook(newIncomingHook).then((hook) => {
                 incomingWebhook = hook;
             });
+
+            cy.visit(`/${team.name}/channels/${channel.name}`);
         });
     });
 
@@ -64,7 +51,7 @@ describe('Interactive Menu', () => {
         const searchOptionsPayload = getMessageMenusPayload({options: searchOptions});
 
         // # Post an incoming webhook for interactive menu with search options
-        cy.postIncomingWebhook({url: incomingWebhook.url, data: searchOptionsPayload});
+        cy.postIncomingWebhook({url: incomingWebhook.url, data: searchOptionsPayload, waitFor: 'attachment-pretext'});
 
         // # Get message attachment from the last post
         cy.getLastPostId().then((postId) => {

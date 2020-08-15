@@ -7,13 +7,26 @@
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
 
-describe('Search', () => {
-    it('S14548 Search results Right-Hand-Side: Post a comment', () => {
-        // # Login and navigate to the app
-        cy.apiLogin('user-1');
-        cy.visit('/ad-1/channels/town-square');
+// Stage: @prod
+// Group: @search
 
-        const message = `asparagus${Date.now()}`;
+import {getRandomId} from '../../utils';
+
+describe('Search', () => {
+    before(() => {
+        // # Login as test user and visit town-square
+        cy.apiInitSetup({loginAfter: true}).then(({team}) => {
+            cy.visit(`/${team.name}/channels/town-square`);
+
+            // # Post several messages of similar format to add complexity in searching
+            Cypress._.times(5, () => {
+                cy.postMessage(`asparagus${getRandomId()}`);
+            });
+        });
+    });
+
+    it('S14548 Search results Right-Hand-Side: Post a comment', () => {
+        const message = `asparagus${getRandomId()}`;
         const comment = 'Replying to asparagus';
 
         // # Post a new message

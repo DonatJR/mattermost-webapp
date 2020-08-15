@@ -138,7 +138,7 @@ class ToastWrapper extends React.PureComponent {
             postListIds,
             lastViewedBottom,
             updateNewMessagesAtInChannel,
-            actions
+            actions,
         } = this.props;
 
         if (!prevProps.atBottom && atBottom && atLatestPost) {
@@ -150,7 +150,7 @@ class ToastWrapper extends React.PureComponent {
         const prevPostsCount = prevProps.postListIds.length;
         const presentPostsCount = postListIds.length;
         const postsAddedAtBottom = presentPostsCount !== prevPostsCount && postListIds[0] !== prevProps.postListIds[0];
-        const notBottomWithLatestPosts = !atBottom && atLatestPost && presentPostsCount > 0;
+        const notBottomWithLatestPosts = atBottom === false && atLatestPost && presentPostsCount > 0;
 
         //Marking existing messages as read based on last time user reached to the bottom
         //This moves the new message indicator to the latest posts and keeping in sync with the toast count
@@ -231,7 +231,7 @@ class ToastWrapper extends React.PureComponent {
                             <LocalDateTime
                                 eventTime={since}
                             />
-                        )
+                        ),
                     }}
                 />
             );

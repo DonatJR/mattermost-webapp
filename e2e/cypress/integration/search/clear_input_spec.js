@@ -2,23 +2,27 @@
 // See LICENSE.txt for license information.
 
 // ***************************************************************
-// - [number] indicates a test step (e.g. # Go to a page)
+// - [#] indicates a test step (e.g. # Go to a page)
 // - [*] indicates an assertion (e.g. * Check the title)
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
 
-import TIMEOUTS from '../../fixtures/timeouts';
+// Stage: @prod
+// Group: @search
+
+import * as TIMEOUTS from '../../fixtures/timeouts';
 
 describe('Search', () => {
     before(() => {
-        // # Login as the sysadmin.
-        cy.apiLogin('sysadmin');
-        cy.visit('/ad-1/channels/town-square');
+        // # Login as test user and visit town-square
+        cy.apiInitSetup({loginAfter: true}).then(({team}) => {
+            cy.visit(`/${team.name}/channels/town-square`);
+        });
     });
 
     it('QuickInput clear X', () => {
         // # Wait for the page to be completely loaded
-        cy.wait(TIMEOUTS.SMALL);
+        cy.wait(TIMEOUTS.FIVE_SEC);
 
         // * X should not be visible on empty input
         cy.get('#searchFormContainer').find('.input-clear-x').should('not.be.visible');

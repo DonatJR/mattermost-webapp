@@ -7,21 +7,24 @@
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
 
-import users from '../../fixtures/users.json';
-import * as TIMEOUTS from '../../fixtures/timeouts';
+// Stage: @prod
+// Group: @accessibility
 
-const user1 = users['user-1'];
+import * as TIMEOUTS from '../../fixtures/timeouts';
 
 function verifySearchAutocomplete(index, type = 'user') {
     cy.get('#search-autocomplete__popover').find('.search-autocomplete__item').eq(index).should('be.visible').and('have.class', 'selected a11y--focused').within((el) => {
         if (type === 'user') {
             cy.get('.mention--align').invoke('text').then((text) => {
-                const username = text.replace('- ', '').replace('(', '').replace(')', '').toLowerCase();
-                cy.wrap(el).parents('#searchFormContainer').find('.sr-only').should('have.attr', 'aria-live', 'polite').and('have.text', username);
+                cy.get('.mention__fullname').invoke('text').then((fullName) => {
+                    const position = text.length - fullName.length;
+                    const usernameFullNameNickName = [text.slice(0, position), fullName].join(' ').replace('@', '').replace('(you)', '').replace('(', '').replace(')', '').toLowerCase();
+                    cy.wrap(el).parents('#searchFormContainer').find('.sr-only').should('have.attr', 'aria-live', 'polite').and('have.text', usernameFullNameNickName);
+                });
             });
         } else if (type === 'channel') {
             cy.get('.search-autocomplete__name').invoke('text').then((text) => {
-                const channel = text.split('~')[1].replace(')', '').toLowerCase().trim();
+                const channel = text.split('~')[1].toLowerCase().trim();
                 cy.wrap(el).parents('#searchFormContainer').find('.sr-only').should('have.attr', 'aria-live', 'polite').and('have.text', channel);
             });
         }
@@ -32,12 +35,15 @@ function verifyMessageAutocomplete(index, type = 'user') {
     cy.get('#suggestionList').find('.mentions__name').eq(index).should('be.visible').and('have.class', 'suggestion--selected').within((el) => {
         if (type === 'user') {
             cy.wrap(el).invoke('text').then((text) => {
-                const username = text.replace('- ', '').replace('@', '').replace('(you)', '').replace('(', '').replace(')', '').toLowerCase();
-                cy.wrap(el).parents('.textarea-wrapper').find('.sr-only').should('have.attr', 'aria-live', 'polite').and('have.text', username);
+                cy.get('.ml-2').invoke('text').then((fullName) => {
+                    const position = text.length - fullName.length;
+                    const usernameFullNameNickName = [text.slice(0, position), fullName].join(' ').replace('@', '').replace('(you)', '').replace('(', '').replace(')', '').toLowerCase();
+                    cy.wrap(el).parents('.textarea-wrapper').find('.sr-only').should('have.attr', 'aria-live', 'polite').and('have.text', usernameFullNameNickName);
+                });
             });
         } else if (type === 'channel') {
-            cy.get('.mention__align>span').invoke('text').then((text) => {
-                const channel = text.split('(')[0].toLowerCase().trim();
+            cy.wrap(el).invoke('text').then((text) => {
+                const channel = text.split('~')[0].toLowerCase().trim();
                 cy.wrap(el).parents('.textarea-wrapper').find('.sr-only').should('have.attr', 'aria-live', 'polite').and('have.text', channel);
             });
         }
@@ -45,29 +51,22 @@ function verifyMessageAutocomplete(index, type = 'user') {
 }
 
 describe('Verify Accessibility Support in different input fields', () => {
+    let testTeam;
     let testChannel;
 
     before(() => {
-        cy.apiLogin('sysadmin');
+        // * Check if server has license for Guest Accounts
+        cy.apiRequireLicenseForFeature('GuestAccounts');
 
-        // # Update Config
-        cy.apiUpdateConfigBasic({
-            GuestAccountsSettings: {
-                Enable: true,
-            },
+        cy.apiInitSetup().then(({team}) => {
+            testTeam = team;
         });
     });
 
     beforeEach(() => {
-        // # Visit the Town Square channel
-        cy.visit('/ad-1/channels/town-square');
-
-        // # Visit the test channel
-        cy.getCurrentTeamId().then((teamId) => {
-            cy.apiCreateChannel(teamId, 'accessibility', 'accessibility').then((response) => {
-                testChannel = response.body;
-                cy.visit(`/ad-1/channels/${testChannel.name}`);
-            });
+        cy.apiCreateChannel(testTeam.id, 'accessibility', 'accessibility').then((response) => {
+            testChannel = response.body;
+            cy.visit(`/${testTeam.name}/channels/${testChannel.name}`);
         });
     });
 
@@ -112,26 +111,23 @@ describe('Verify Accessibility Support in different input fields', () => {
 
     it('MM-22625 Verify Accessibility Support in Search Autocomplete', () => {
         // # Adding at least five other users in the channel
-        const channelId = testChannel.id;
-        cy.getCurrentTeamId().then((teamId) => {
-            for (let i = 0; i < 5; i++) {
-                cy.createNewUser({}, [teamId]).then((user) => {
-                    cy.apiAddUserToChannel(channelId, user.id);
+        for (let i = 0; i < 5; i++) {
+            cy.apiCreateUser().then(({user}) => { // eslint-disable-line
+                cy.apiAddUserToTeam(testTeam.id, user.id).then(() => {
+                    cy.apiAddUserToChannel(testChannel.id, user.id);
                 });
-            }
-        });
-        cy.apiLogin('sysadmin');
-        cy.visit(`/ad-1/channels/${testChannel.name}`);
+            });
+        }
 
         // * Verify Accessibility support in search input
         cy.get('#searchBox').should('have.attr', 'aria-describedby', 'searchbar-help-popup').and('have.attr', 'aria-label', 'Search').focus();
         cy.get('#searchbar-help-popup').should('be.visible').and('have.attr', 'role', 'tooltip');
 
         // # Ensure User list is cached once in UI
-        cy.get('#searchBox').type('from:').wait(TIMEOUTS.SMALL);
+        cy.get('#searchBox').type('from:').wait(TIMEOUTS.FIVE_SEC);
 
         // # Trigger the user autocomplete again
-        cy.get('#searchBox').clear().type('from:').wait(TIMEOUTS.SMALL).type('{downarrow}{downarrow}');
+        cy.get('#searchBox').clear().type('from:').wait(TIMEOUTS.FIVE_SEC).type('{downarrow}{downarrow}');
 
         // * Verify Accessibility Support in search autocomplete
         verifySearchAutocomplete(2);
@@ -145,10 +141,10 @@ describe('Verify Accessibility Support in different input fields', () => {
         verifySearchAutocomplete(3);
 
         // # Type the in: filter and ensure channel list is cached once
-        cy.get('#searchBox').clear().type('in:').wait(TIMEOUTS.SMALL);
+        cy.get('#searchBox').clear().type('in:').wait(TIMEOUTS.FIVE_SEC);
 
         // # Trigger the channel autocomplete again
-        cy.get('#searchBox').clear().type('in:').wait(TIMEOUTS.SMALL).type('{downarrow}{downarrow}');
+        cy.get('#searchBox').clear().type('in:').wait(TIMEOUTS.FIVE_SEC).type('{downarrow}{downarrow}');
 
         // * Verify Accessibility Support in search autocomplete
         verifySearchAutocomplete(2, 'channel');
@@ -160,52 +156,51 @@ describe('Verify Accessibility Support in different input fields', () => {
 
     it('MM-22625 Verify Accessibility Support in Message Autocomplete', () => {
         // # Adding at least one other user in the channel
-        cy.getCurrentChannelId().then((channelId) => {
-            cy.apiGetUserByEmail(user1.email).then((res) => {
-                const user = res.body;
-                cy.apiAddUserToChannel(channelId, user.id);
+        cy.apiCreateUser().then(({user}) => {
+            cy.apiAddUserToTeam(testTeam.id, user.id).then(() => {
+                cy.apiAddUserToChannel(testChannel.id, user.id).then(() => {
+                    // * Verify Accessibility support in post input field
+                    cy.get('#post_textbox').should('have.attr', 'aria-label', `write to ${testChannel.display_name}`).clear().focus();
+
+                    // # Ensure User list is cached once in UI
+                    cy.get('#post_textbox').type('@').wait(TIMEOUTS.FIVE_SEC);
+
+                    // # Select the first user in the list
+                    cy.get('#suggestionList').find('.mentions__name').eq(0).within((el) => {
+                        cy.get('.mention--align').invoke('text').then((text) => {
+                            cy.wrap(el).parents('body').find('#post_textbox').clear().type(text);
+                        });
+                    });
+
+                    // # Trigger the user autocomplete again
+                    cy.get('#post_textbox').clear().type('@').wait(TIMEOUTS.FIVE_SEC).type('{uparrow}{uparrow}{downarrow}');
+
+                    // * Verify Accessibility Support in message autocomplete
+                    verifyMessageAutocomplete(1);
+
+                    // # Press Up arrow and verify if focus changes
+                    cy.focused().type('{downarrow}{uparrow}{uparrow}');
+
+                    // * Verify Accessibility Support in message autocomplete
+                    verifyMessageAutocomplete(0);
+
+                    // # Trigger the channel autocomplete filter and ensure channel list is cached once
+                    cy.get('#post_textbox').clear().type('~').wait(TIMEOUTS.FIVE_SEC);
+
+                    // # Trigger the channel autocomplete again
+                    cy.get('#post_textbox').clear().type('~').wait(TIMEOUTS.FIVE_SEC).type('{downarrow}{downarrow}');
+
+                    // * Verify Accessibility Support in message autocomplete
+                    verifyMessageAutocomplete(2, 'channel');
+
+                    // # Press Up arrow and verify if focus changes
+                    cy.focused().type('{downarrow}{uparrow}{uparrow}');
+
+                    // * Verify Accessibility Support in message autocomplete
+                    verifyMessageAutocomplete(1, 'channel');
+                });
             });
         });
-
-        // * Verify Accessibility support in post input field
-        cy.get('#post_textbox').should('have.attr', 'aria-label', `write to ${testChannel.display_name}`).clear().focus();
-
-        // # Ensure User list is cached once in UI
-        cy.get('#post_textbox').type('@').wait(TIMEOUTS.SMALL);
-
-        // # Select the first user in the list
-        cy.get('#suggestionList').find('.mentions__name').eq(0).within((el) => {
-            cy.get('.mention--align').invoke('text').then((text) => {
-                cy.wrap(el).parents('body').find('#post_textbox').clear().type(text);
-            });
-        });
-
-        // # Trigger the user autocomplete again
-        cy.get('#post_textbox').clear().type('@').wait(TIMEOUTS.SMALL).type('{downarrow}');
-
-        // * Verify Accessibility Support in message autocomplete
-        verifyMessageAutocomplete(1);
-
-        // # Press Up arrow and verify if focus changes
-        cy.focused().type('{downarrow}{uparrow}{uparrow}');
-
-        // * Verify Accessibility Support in message autocomplete
-        verifyMessageAutocomplete(0);
-
-        // # Trigger the channel autocomplete filter and ensure channel list is cached once
-        cy.get('#post_textbox').clear().type('~').wait(TIMEOUTS.SMALL);
-
-        // # Trigger the channel autocomplete again
-        cy.get('#post_textbox').clear().type('~').wait(TIMEOUTS.SMALL).type('{downarrow}{downarrow}');
-
-        // * Verify Accessibility Support in message autocomplete
-        verifyMessageAutocomplete(2, 'channel');
-
-        // # Press Up arrow and verify if focus changes
-        cy.focused().type('{downarrow}{uparrow}{uparrow}');
-
-        // * Verify Accessibility Support in message autocomplete
-        verifyMessageAutocomplete(1, 'channel');
     });
 
     it('MM-22625 Verify Accessibility Support in Main Post Input', () => {

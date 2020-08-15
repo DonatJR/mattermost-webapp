@@ -2,10 +2,13 @@
 // See LICENSE.txt for license information.
 
 // ***************************************************************
-// - [number] indicates a test step (e.g. # Go to a page)
+// - [#] indicates a test step (e.g. # Go to a page)
 // - [*] indicates an assertion (e.g. * Check the title)
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
+
+// Stage: @prod
+// Group: @messaging
 
 function waitForImageUpload() {
     // * Verify that the image exists in the post message footer
@@ -16,21 +19,19 @@ function waitForImageUpload() {
 
 describe('Messaging', () => {
     before(() => {
-        // # Login and go to /
-        cy.apiLogin('user-1');
-        cy.visit('/ad-1/channels/town-square');
-
-        // # Set the default image preview setting to Expanded
-        cy.apiSavePreviewCollapsedPreference('false');
+        // # Login as test user and visit town-square
+        cy.apiInitSetup({loginAfter: true}).then(({team}) => {
+            cy.visit(`/${team.name}/channels/town-square`);
+        });
     });
 
     it('M16425 : Show single image thumbnails in standard mode', () => {
         // # Set the messages display setting to standard i.e not compact
-        cy.apiSaveMessageDisplayPreference();
+        cy.apiSaveMessageDisplayPreference('clean');
 
         // # upload an image
         const IMAGE_NAME = 'huge-image.jpg';
-        cy.fileUpload('#fileUploadInput', IMAGE_NAME);
+        cy.get('#fileUploadInput').attachFile(IMAGE_NAME);
         waitForImageUpload();
 
         // # post it with a message
@@ -62,7 +63,7 @@ describe('Messaging', () => {
 
         // # upload an image
         const IMAGE_NAME = 'huge-image.jpg';
-        cy.fileUpload('#fileUploadInput', IMAGE_NAME);
+        cy.get('#fileUploadInput').attachFile(IMAGE_NAME);
         waitForImageUpload();
 
         // # post it with a message

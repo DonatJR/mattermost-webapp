@@ -19,7 +19,7 @@ import OverlayTrigger from 'components/overlay_trigger';
 import TeamIcon from '../../widgets/team_icon/team_icon';
 
 // eslint-disable-next-line react/require-optimization
-class TeamButton extends React.Component {
+class TeamButton extends React.PureComponent {
     static propTypes = {
         btnClass: PropTypes.string,
         url: PropTypes.string.isRequired,
@@ -123,7 +123,7 @@ class TeamButton extends React.Component {
             />
         );
 
-        let toolTip = this.props.tip || localizeMessage('team.button.name_undefined', 'Name undefined');
+        let toolTip = this.props.tip || localizeMessage('team.button.name_undefined', 'This team does not have a name');
         let orderIndicator;
         if (typeof this.props.order !== 'undefined' && this.props.order < 10) {
             let toolTipHelp;

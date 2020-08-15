@@ -155,7 +155,7 @@ const allShortcuts = defineMessages({
         mac: {
             id: t('shortcuts.nav.open_close_sidebar.mac'),
             defaultMessage: 'Open or close the right sidebar\t⌘|.',
-        }
+        },
     },
     msgHeader: {
         id: t('shortcuts.msgs.header'),
@@ -212,11 +212,11 @@ const allShortcuts = defineMessages({
     msgLastReaction: {
         default: {
             id: t('shortcuts.msgs.comp.last_reaction'),
-            defaultMessage: 'React to last message: \tCtrl|Shift|\u29F5',
+            defaultMessage: 'React to last message:\tCtrl|Shift|\u29F5',
         },
         mac: {
             id: t('shortcuts.msgs.comp.last_reaction.mac'),
-            defaultMessage: 'React to last message: \t⌘|Shift|\u29F5',
+            defaultMessage: 'React to last message:\t⌘|Shift|\u29F5',
         },
     },
     filesHeader: {

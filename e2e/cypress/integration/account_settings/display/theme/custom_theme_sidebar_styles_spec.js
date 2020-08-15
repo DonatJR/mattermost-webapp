@@ -7,6 +7,8 @@
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
 
+// Group: @account_setting
+
 import * as TIMEOUTS from '../../../../fixtures/timeouts';
 
 const testCases = [
@@ -27,17 +29,14 @@ const testCases = [
 
 describe('AS14318 Theme Colors - Custom Sidebar Styles input change', () => {
     before(() => {
-        // # Set default theme preference
-        cy.apiLogin('user-1');
-        cy.apiSaveThemePreference();
+        // # Login as new user and visit town-square
+        cy.apiInitSetup({loginAfter: true}).then(({team}) => {
+            cy.visit(`/${team.name}/channels/town-square`);
 
-        // # Go to Theme > Custom > Sidebar Styles
-        toThemeDisplaySettings();
-        openSidebarStyles();
-    });
-
-    after(() => {
-        cy.apiSaveThemePreference();
+            // # Go to Theme > Custom > Sidebar Styles
+            toThemeDisplaySettings();
+            openSidebarStyles();
+        });
     });
 
     testCases.forEach((testCase) => {
@@ -47,7 +46,7 @@ describe('AS14318 Theme Colors - Custom Sidebar Styles input change', () => {
 
             // # Enter hex value
             cy.get('.color-popover').scrollIntoView().within(() => {
-                cy.get('input').clear({force: true}).invoke('val', testCase.value).wait(TIMEOUTS.TINY).type(' {backspace}{enter}', {force: true});
+                cy.get('input').clear({force: true}).invoke('val', testCase.value).wait(TIMEOUTS.HALF_SEC).type(' {backspace}{enter}', {force: true});
             });
 
             // * Check that icon color change
@@ -76,9 +75,6 @@ describe('AS14318 Theme Colors - Custom Sidebar Styles input change', () => {
     });
 
     it('should take effect each custom color in Channel View', () => {
-        // * Check Sidebar Unread Text
-        cy.get('.sidebar-item.unread-title').should('have.css', 'color', 'rgb(129, 65, 65)');
-
         // * Check Mention Jewel BG color
         cy.get('#unreadIndicatorBottom').should('have.css', 'background-color', 'rgb(129, 65, 65)');
 
@@ -110,7 +106,7 @@ describe('AS14318 Theme Colors - Custom Sidebar Styles input change', () => {
 
 function toThemeDisplaySettings() {
     // # Go to account settings modal
-    cy.toAccountSettingsModal(null, true);
+    cy.toAccountSettingsModal();
 
     // * Check that the Display tab is loaded, then click on it
     cy.get('#displayButton').should('be.visible').click();

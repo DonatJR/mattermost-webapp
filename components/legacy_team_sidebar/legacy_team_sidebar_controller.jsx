@@ -42,7 +42,7 @@ export function renderThumbVertical(props) {
         />);
 }
 
-export default class LegacyTeamSidebar extends React.Component {
+export default class LegacyTeamSidebar extends React.PureComponent {
     static propTypes = {
         myTeams: PropTypes.array.isRequired,
         currentTeamId: PropTypes.string.isRequired,
@@ -183,7 +183,7 @@ export default class LegacyTeamSidebar extends React.Component {
         const newTeamsOrder = pushElement(
             popElement(teams, sourceIndex),
             destinationIndex,
-            result.draggableId
+            result.draggableId,
         );
         updateTeamsOrderForUser(newTeamsOrder.map((o) => o.id));
         this.setState({teamsOrder: newTeamsOrder});
@@ -233,12 +233,12 @@ export default class LegacyTeamSidebar extends React.Component {
                     tip={
                         <FormattedMessage
                             id='team_sidebar.join'
-                            defaultMessage='Other teams you can join.'
+                            defaultMessage='Other teams you can join'
                         />
                     }
                     content={'+'}
                     switchTeam={this.props.actions.switchTeam}
-                />
+                />,
             );
         } else {
             joinableTeams.push(
@@ -258,7 +258,7 @@ export default class LegacyTeamSidebar extends React.Component {
                         content={'+'}
                         switchTeam={this.props.actions.switchTeam}
                     />
-                </SystemPermissionGate>
+                </SystemPermissionGate>,
             );
         }
 
@@ -268,7 +268,7 @@ export default class LegacyTeamSidebar extends React.Component {
                 className='team-sidebar-bottom-plugin is-empty'
             >
                 <Pluggable pluggableName='BottomTeamSidebar'/>
-            </div>
+            </div>,
         );
 
         return (

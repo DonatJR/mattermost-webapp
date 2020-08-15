@@ -7,6 +7,8 @@
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
 
+// Group: @interactive_dialog
+
 /**
 * Note: This test requires webhook server running. Initiate `npm run start:webhook` to start.
 */
@@ -30,26 +32,21 @@ const optionsLength = {
 };
 
 describe('Interactive Dialog', () => {
+    let config;
+
     before(() => {
         cy.requireWebhookServer();
 
-        // Set required ServiceSettings
-        const newSettings = {
-            ServiceSettings: {
-                AllowedUntrustedInternalConnections: 'localhost',
-                EnablePostUsernameOverride: true,
-                EnablePostIconOverride: true,
-            },
-        };
-        cy.apiUpdateConfig(newSettings);
-
-        // # Login as sysadmin and ensure that teammate name display setting is set to default 'username'
-        cy.apiLogin('sysadmin');
+        // # Ensure that teammate name display setting is set to default 'username'
         cy.apiSaveTeammateNameDisplayPreference('username');
 
+        // # Get config
+        cy.apiGetConfig().then((data) => {
+            ({config} = data);
+        });
+
         // # Create new team and create command on it
-        cy.apiCreateTeam('test-team', 'Test Team').then((teamResponse) => {
-            const team = teamResponse.body;
+        cy.apiCreateTeam('test-team', 'Test Team').then(({team}) => {
             cy.visit(`/${team.name}`);
 
             const webhookBaseUrl = Cypress.env().webhookBaseUrl;
@@ -106,7 +103,13 @@ describe('Interactive Dialog', () => {
                     // * Verify that the suggestion list or autocomplete open up on click of input element
                     cy.wrap($elForm).find('#suggestionList').should('not.be.visible');
                     cy.wrap($elForm).find('input').click();
-                    cy.wrap($elForm).find('#suggestionList').scrollIntoView().should('be.visible').children().should('have.length', optionsLength[element.name]);
+                    cy.wrap($elForm).find('#suggestionList').scrollIntoView().should('be.visible').children().then((el) => {
+                        if (element.name === 'someuserselector' && config.ElasticsearchSettings.EnableIndexing) {
+                            return;
+                        }
+
+                        cy.wrap(el).should('have.length', optionsLength[element.name]);
+                    });
                 } else if (element.name === 'someradiooptions') {
                     cy.wrap($elForm).find('input').should('be.visible').and('have.length', optionsLength[element.name]);
 
@@ -256,6 +259,22 @@ describe('Interactive Dialog', () => {
                 }
             });
         });
+
+        closeInteractiveDialog();
+    });
+
+    it('ID21032 - Password element check', () => {
+        // # Post a slash command
+        cy.postMessage(`/${createdCommand.trigger}`);
+
+        // * Verify that the interactive dialog modal open up
+        cy.get('#interactiveDialogModal').should('be.visible');
+
+        // * Verify that the password text area is visible
+        cy.get('#somepassword').should('be.visible');
+
+        // * Verify that the password is masked on enter of text
+        cy.get('#somepassword').should('have.attr', 'type', 'password');
 
         closeInteractiveDialog();
     });

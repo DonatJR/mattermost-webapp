@@ -1,5 +1,6 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
+/* eslint-disable react/no-string-refs */
 
 import PropTypes from 'prop-types';
 import React from 'react';
@@ -42,6 +43,11 @@ class ProfilePopover extends React.PureComponent {
         src: PropTypes.string.isRequired,
 
         /**
+         * Source URL from the image that should override default image
+         */
+        overwriteIcon: PropTypes.string,
+
+        /**
          * User the popover is being opened for
          */
         user: PropTypes.object,
@@ -63,6 +69,11 @@ class ProfilePopover extends React.PureComponent {
          * sidebar (comment thread, search results, etc.)
          */
         isRHS: PropTypes.bool,
+
+        /**
+         * Returns state of modals in redux for determing which need to be closed
+         */
+        modals: PropTypes.object,
 
         currentTeamId: PropTypes.string.isRequired,
 
@@ -102,12 +113,18 @@ class ProfilePopover extends React.PureComponent {
         canManageAnyChannelMembersInCurrentTeam: PropTypes.bool.isRequired,
 
         /**
+         * The overwritten username that should be shown at the top of the popover
+         */
+        overwriteName: PropTypes.node,
+
+        /**
          * @internal
          */
         actions: PropTypes.shape({
             getMembershipForCurrentEntities: PropTypes.func.isRequired,
             openDirectChannelToUserId: PropTypes.func.isRequired,
             openModal: PropTypes.func.isRequired,
+            closeModal: PropTypes.func.isRequired,
         }).isRequired,
 
         /**
@@ -164,6 +181,7 @@ class ProfilePopover extends React.PureComponent {
                 browserHistory.push(`${this.props.teamUrl}/messages/@${user.username}`);
             }
         });
+        this.handleCloseModals();
     }
 
     handleMentionKeyClick = (e) => {
@@ -176,6 +194,7 @@ class ProfilePopover extends React.PureComponent {
             this.props.hide();
         }
         EventEmitter.emit('mention_key_click', this.props.user.username, this.props.isRHS);
+        this.handleCloseModals();
     }
 
     handleEditAccountSettings = (e) => {
@@ -188,7 +207,28 @@ class ProfilePopover extends React.PureComponent {
             this.props.hide();
         }
         this.props.actions.openModal({ModalId: ModalIdentifiers.USER_SETTINGS, dialogType: UserSettingsModal});
+        this.handleCloseModals();
     }
+
+    handleAddToChannel = (e) => {
+        e.preventDefault();
+
+        this.handleCloseModals();
+    }
+
+    handleCloseModals = () => {
+        const {modals} = this.props;
+
+        for (const modal in modals) {
+            if (!Object.prototype.hasOwnProperty.call(modals, modal)) {
+                continue;
+            }
+
+            if (modals[modal].open) {
+                this.props.actions.closeModal(modal);
+            }
+        }
+    };
 
     render() {
         if (!this.props.user) {
@@ -219,18 +259,21 @@ class ProfilePopover extends React.PureComponent {
         const {formatMessage} = this.props.intl;
 
         var dataContent = [];
+        const urlSrc = this.props.overwriteIcon ?
+            this.props.overwriteIcon : this.props.src;
+
         dataContent.push(
             <Avatar
                 size='xxl'
                 username={this.props.user.username}
-                url={this.props.src}
+                url={urlSrc}
                 key='user-popover-image'
             />,
         );
 
         const fullname = Utils.getFullName(this.props.user);
-
-        if (fullname || this.props.user.position) {
+        const haveOverrideProp = this.props.overwriteIcon || this.props.overwriteName;
+        if ((fullname || this.props.user.position) && !haveOverrideProp) {
             dataContent.push(
                 <hr
                     key='user-popover-hr'
@@ -239,7 +282,7 @@ class ProfilePopover extends React.PureComponent {
             );
         }
 
-        if (fullname) {
+        if (fullname && !haveOverrideProp) {
             dataContent.push(
                 <OverlayTrigger
                     delayShow={Constants.OVERLAY_TIME_DELAY}
@@ -256,7 +299,7 @@ class ProfilePopover extends React.PureComponent {
             );
         }
 
-        if (this.props.user.is_bot) {
+        if (this.props.user.is_bot && !haveOverrideProp) {
             dataContent.push(
                 <div
                     key='bot-description'
@@ -267,7 +310,7 @@ class ProfilePopover extends React.PureComponent {
             );
         }
 
-        if (this.props.user.position) {
+        if (this.props.user.position && !haveOverrideProp) {
             const position = this.props.user.position.substring(0, Constants.MAX_POSITION_LENGTH);
             dataContent.push(
                 <OverlayTrigger
@@ -286,7 +329,7 @@ class ProfilePopover extends React.PureComponent {
         }
 
         const email = this.props.user.email;
-        if (email && !this.props.user.is_bot) {
+        if (email && !this.props.user.is_bot && !haveOverrideProp) {
             dataContent.push(
                 <hr
                     key='user-popover-hr2'
@@ -320,7 +363,7 @@ class ProfilePopover extends React.PureComponent {
             />,
         );
 
-        if (this.props.enableTimezone && this.props.user.timezone) {
+        if (this.props.enableTimezone && this.props.user.timezone && !haveOverrideProp) {
             dataContent.push(
                 <div
                     key='user-popover-local-time'
@@ -335,7 +378,7 @@ class ProfilePopover extends React.PureComponent {
             );
         }
 
-        if (this.props.user.id === this.props.currentUserId) {
+        if (this.props.user.id === this.props.currentUserId && !haveOverrideProp) {
             dataContent.push(
                 <div
                     data-toggle='tooltip'
@@ -359,7 +402,23 @@ class ProfilePopover extends React.PureComponent {
             );
         }
 
-        if (this.props.user.id !== this.props.currentUserId) {
+        if (haveOverrideProp) {
+            dataContent.push(
+                <div
+                    data-toggle='tooltip'
+                    key='user-popover-settings'
+                    className='popover__row first'
+                >
+                    <FormattedMessage
+                        id='user_profile.account.post_was_created'
+                        defaultMessage='This post was created by an integration from'
+                    />
+                    <a onClick={this.handleMentionKeyClick}>{` @${this.props.user.username}`}</a>
+                </div>,
+            );
+        }
+
+        if (this.props.user.id !== this.props.currentUserId && !haveOverrideProp) {
             dataContent.push(
                 <div
                     data-toggle='tooltip'
@@ -394,6 +453,7 @@ class ProfilePopover extends React.PureComponent {
                         <a
                             href='#'
                             className='text-nowrap'
+                            onClick={this.handleAddToChannel}
                         >
                             <ToggleModalButtonRedux
                                 accessibilityLabel={addToChannelMessage}
@@ -440,10 +500,12 @@ class ProfilePopover extends React.PureComponent {
         }
 
         let title = `@${this.props.user.username}`;
-        if (this.props.hasMention) {
+        if (this.props.overwriteName) {
+            title = `${this.props.overwriteName}`;
+            roleTitle = '';
+        } else if (this.props.hasMention) {
             title = <a onClick={this.handleMentionKeyClick}>{title}</a>;
         }
-
         title = (
             <span data-testid={`profilePopoverTitle_${this.props.user.username}`}>
                 <span className='user-popover__username'>
@@ -468,3 +530,4 @@ class ProfilePopover extends React.PureComponent {
 delete ProfilePopover.propTypes.id;
 
 export default injectIntl(ProfilePopover);
+/* eslint-enable react/no-string-refs */

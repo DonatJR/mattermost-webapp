@@ -5,6 +5,7 @@ import React from 'react';
 import {Posts} from 'mattermost-redux/constants';
 
 import {shallowWithIntl} from 'tests/helpers/intl-test-helper';
+import {testComponentForLineBreak} from 'tests/helpers/line_break_helpers';
 import * as GlobalActions from 'actions/global_actions.jsx';
 import EmojiMap from 'utils/emoji_map';
 
@@ -35,7 +36,6 @@ jest.mock('actions/post_actions.jsx', () => ({
     }),
 }));
 
-const KeyCodes = Constants.KeyCodes;
 const currentTeamIdProp = 'r7rws4y7ppgszym3pdd5kaibfa';
 const currentUserIdProp = 'zaktnt8bpbgu8mb6ez9k64r7sa';
 const showTutorialTipProp = false;
@@ -73,6 +73,7 @@ const actionsProp = {
     setDraft: jest.fn(),
     setEditingPost: jest.fn(),
     openModal: jest.fn(),
+    setShowPreview: jest.fn(),
     executeCommand: async () => {
         return {data: true};
     },
@@ -84,6 +85,7 @@ const actionsProp = {
         return {data: {message, args}};
     },
     scrollPostListToBottom: jest.fn(),
+    getChannelMemberCountsByGroup: jest.fn(),
 };
 
 /* eslint-disable react/prop-types */
@@ -105,6 +107,8 @@ function createPost({
     readOnlyChannel = false,
     canUploadFiles = true,
     emojiMap = new EmojiMap(new Map()),
+    isTimezoneEnabled = false,
+    useGroupMentions = true,
 } = {}) {
     return (
         <CreatePost
@@ -133,9 +137,11 @@ function createPost({
             rhsExpanded={false}
             emojiMap={emojiMap}
             badConnection={false}
-            isTimezoneEnabled={false}
+            shouldShowPreview={false}
+            isTimezoneEnabled={isTimezoneEnabled}
             canPost={true}
             useChannelMentions={true}
+            useGroupMentions={useGroupMentions}
         />
     );
 }
@@ -176,8 +182,8 @@ describe('components/create_post', () => {
         expect(clearDraftUploads).toHaveBeenCalled();
     });
 
-    it('Check for state change on channelId change', () => {
-        const wrapper = shallowWithIntl(createPost());
+    it('Check for state change on channelId change with useGroupMentions = true', () => {
+        const wrapper = shallowWithIntl(createPost({}));
         const draft = {
             ...draftProp,
             message: 'test',
@@ -197,6 +203,41 @@ describe('components/create_post', () => {
         expect(wrapper.state('message')).toBe('test');
     });
 
+    it('Check for getChannelMemberCountsByGroup called on mount and when channel changed with useGroupMentions = true', () => {
+        const getChannelMemberCountsByGroup = jest.fn();
+        const actions = {
+            ...actionsProp,
+            getChannelMemberCountsByGroup,
+        };
+        const wrapper = shallowWithIntl(createPost({actions}));
+        expect(getChannelMemberCountsByGroup).toHaveBeenCalled();
+        wrapper.setProps({
+            currentChannel: {
+                ...currentChannelProp,
+                id: 'owsyt8n43jfxjpzh9np93mx1wb',
+            },
+        });
+        expect(getChannelMemberCountsByGroup).toHaveBeenCalled();
+    });
+
+    it('Check for getChannelMemberCountsByGroup not called on mount and when channel changed with useGroupMentions = false', () => {
+        const getChannelMemberCountsByGroup = jest.fn();
+        const useGroupMentions = false;
+        const actions = {
+            ...actionsProp,
+            getChannelMemberCountsByGroup,
+        };
+        const wrapper = shallowWithIntl(createPost({actions, useGroupMentions}));
+        expect(getChannelMemberCountsByGroup).not.toHaveBeenCalled();
+        wrapper.setProps({
+            currentChannel: {
+                ...currentChannelProp,
+                id: 'owsyt8n43jfxjpzh9np93mx1wb',
+            },
+        });
+        expect(getChannelMemberCountsByGroup).not.toHaveBeenCalled();
+    });
+
     it('click toggleEmojiPicker', () => {
         const wrapper = shallowWithIntl(createPost());
         wrapper.find('.emoji-picker__container').simulate('click');
@@ -214,7 +255,7 @@ describe('components/create_post', () => {
                 focus: jest.fn(),
             };
         };
-        wrapper.instance().refs = {textbox: {getWrappedInstance: () => ({getInputBox: jest.fn(mockImpl), focus: jest.fn(), blur: jest.fn()})}};
+        wrapper.instance().refs = {textbox: {getInputBox: jest.fn(mockImpl), focus: jest.fn(), blur: jest.fn()}};
 
         wrapper.find('.emoji-picker__container').simulate('click');
         expect(wrapper.state('showEmojiPicker')).toBe(true);
@@ -251,26 +292,22 @@ describe('components/create_post', () => {
                     ...actionsProp,
                     setDraft,
                 },
-            })
+            }),
         );
 
         const postTextbox = wrapper.find('#post_textbox');
         postTextbox.simulate('change', {target: {value: 'change'}});
         expect(setDraft).not.toHaveBeenCalled();
-        jest.runAllTimers();
+        jest.runOnlyPendingTimers();
         expect(setDraft).toHaveBeenCalledWith(StoragePrefixes.DRAFT + currentChannelProp.id, draft);
     });
 
     it('onKeyPress textbox should call emitLocalUserTypingEvent', () => {
         const wrapper = shallowWithIntl(createPost());
-        wrapper.instance().refs = {textbox: {getWrappedInstance: () => ({blur: jest.fn()})}};
-
-        wrapper.setState({
-            showPreview: false,
-        });
+        wrapper.instance().refs = {textbox: {blur: jest.fn()}};
 
         const postTextbox = wrapper.find('#post_textbox');
-        postTextbox.simulate('KeyPress', {key: KeyCodes.ENTER[0], preventDefault: jest.fn(), persist: jest.fn()});
+        postTextbox.simulate('KeyPress', {key: Constants.KeyCodes.ENTER[0], preventDefault: jest.fn(), persist: jest.fn()});
         expect(GlobalActions.emitLocalUserTypingEvent).toHaveBeenCalledWith(currentChannelProp.id, '');
     });
 
@@ -292,6 +329,155 @@ describe('components/create_post', () => {
         });
 
         form.simulate('Submit', {preventDefault: jest.fn()});
+        expect(wrapper.state('showConfirmModal')).toBe(false);
+    });
+
+    it('onSubmit test for @groups', () => {
+        const wrapper = shallowWithIntl(createPost());
+
+        wrapper.setProps({
+            groupsWithAllowReference: new Map([
+                ['@developers', {
+                    id: 'developers',
+                    name: 'developers',
+                }],
+            ]),
+            channelMemberCountsByGroup: {
+                developers: {
+                    channel_member_count: 10,
+                    channel_member_timezones_count: 0,
+                },
+            },
+        });
+        wrapper.setState({
+            message: '@developers',
+        });
+
+        const form = wrapper.find('#create_post');
+        form.simulate('Submit', {preventDefault: jest.fn()});
+        expect(wrapper.state('showConfirmModal')).toBe(true);
+        expect(wrapper.state('memberNotifyCount')).toBe(10);
+        expect(wrapper.state('channelTimezoneCount')).toBe(0);
+        expect(wrapper.state('mentions')).toMatchObject(['@developers']);
+        wrapper.instance().hideNotifyAllModal();
+        expect(wrapper.state('showConfirmModal')).toBe(false);
+    });
+
+    it('onSubmit test for several @groups', () => {
+        const wrapper = shallowWithIntl(createPost());
+
+        wrapper.setProps({
+            groupsWithAllowReference: new Map([
+                ['@developers', {
+                    id: 'developers',
+                    name: 'developers',
+                }],
+                ['@boss', {
+                    id: 'boss',
+                    name: 'boss',
+                }],
+                ['@love', {
+                    id: 'love',
+                    name: 'love',
+                }],
+                ['@you', {
+                    id: 'you',
+                    name: 'you',
+                }],
+                ['@software-developers', {
+                    id: 'softwareDevelopers',
+                    name: 'software-developers',
+                }],
+            ]),
+            channelMemberCountsByGroup: {
+                developers: {
+                    channel_member_count: 10,
+                    channel_member_timezones_count: 0,
+                },
+                boss: {
+                    channel_member_count: 20,
+                    channel_member_timezones_count: 0,
+                },
+                love: {
+                    channel_member_count: 30,
+                    channel_member_timezones_count: 0,
+                },
+                you: {
+                    channel_member_count: 40,
+                    channel_member_timezones_count: 0,
+                },
+                softwareDevelopers: {
+                    channel_member_count: 5,
+                    channel_member_timezones_count: 0,
+                },
+            },
+        });
+        wrapper.setState({
+            message: '@developers @boss @love @you @software-developers',
+        });
+
+        const form = wrapper.find('#create_post');
+        form.simulate('Submit', {preventDefault: jest.fn()});
+        expect(wrapper.state('showConfirmModal')).toBe(true);
+        expect(wrapper.state('memberNotifyCount')).toBe(40);
+        expect(wrapper.state('channelTimezoneCount')).toBe(0);
+        expect(wrapper.state('mentions')).toMatchObject(['@developers', '@boss', '@love', '@you', '@software-developers']);
+        wrapper.instance().hideNotifyAllModal();
+        expect(wrapper.state('showConfirmModal')).toBe(false);
+    });
+
+    it('onSubmit test for several @groups with timezone', () => {
+        const wrapper = shallowWithIntl(createPost());
+
+        wrapper.setProps({
+            groupsWithAllowReference: new Map([
+                ['@developers', {
+                    id: 'developers',
+                    name: 'developers',
+                }],
+                ['@boss', {
+                    id: 'boss',
+                    name: 'boss',
+                }],
+                ['@love', {
+                    id: 'love',
+                    name: 'love',
+                }],
+                ['@you', {
+                    id: 'you',
+                    name: 'you',
+                }],
+            ]),
+            channelMemberCountsByGroup: {
+                developers: {
+                    channel_member_count: 10,
+                    channel_member_timezones_count: 10,
+                },
+                boss: {
+                    channel_member_count: 20,
+                    channel_member_timezones_count: 130,
+                },
+                love: {
+                    channel_member_count: 30,
+                    channel_member_timezones_count: 2,
+                },
+                you: {
+                    channel_member_count: 40,
+                    channel_member_timezones_count: 5,
+                },
+            },
+        });
+        wrapper.setState({
+            message: '@developers @boss @love @you',
+        });
+
+        const form = wrapper.find('#create_post');
+        form.simulate('Submit', {preventDefault: jest.fn()});
+        expect(wrapper.state('showConfirmModal')).toBe(true);
+        expect(wrapper.state('memberNotifyCount')).toBe(40);
+        expect(wrapper.state('channelTimezoneCount')).toBe(5);
+        expect(wrapper.state('mentions')).toMatchObject(['@developers', '@boss', '@love', '@you']);
+        wrapper.instance().hideNotifyAllModal();
         expect(wrapper.state('showConfirmModal')).toBe(false);
     });
 
@@ -358,20 +544,27 @@ describe('components/create_post', () => {
     it('onSubmit test for @all with timezones', () => {
         const wrapper = shallowWithIntl(
             createPost({
-                getChannelTimezones: jest.fn(() => Promise.resolve([])),
+                actions: {
+                    ...actionsProp,
+                    getChannelTimezones: jest.fn(() => Promise.resolve({data: [1, 2, 3, 4]})),
+                },
                 isTimezoneEnabled: true,
-            })
+                currentChannelMembersCount: 9,
+            }),
         );
 
         wrapper.setState({
             message: 'test @all',
             channelTimezoneCount: 4,
+            showConfirmModal: true,
+            memberNotifyCount: 8,
         });
 
         const form = wrapper.find('#create_post');
         form.simulate('Submit', {preventDefault: jest.fn()});
         expect(wrapper.state('showConfirmModal')).toBe(true);
         expect(wrapper.state('channelTimezoneCount')).toBe(4);
+        expect(wrapper.state('memberNotifyCount')).toBe(8);
         wrapper.instance().hideNotifyAllModal();
         expect(wrapper.state('showConfirmModal')).toBe(false);
 
@@ -388,7 +581,7 @@ describe('components/create_post', () => {
             createPost({
                 getChannelTimezones: jest.fn(() => Promise.resolve([])),
                 isTimezoneEnabled: false,
-            })
+            }),
         );
 
         wrapper.setState({
@@ -419,7 +612,7 @@ describe('components/create_post', () => {
                     ...actionsProp,
                     openModal,
                 },
-            })
+            }),
         );
 
         wrapper.setState({
@@ -442,7 +635,7 @@ describe('components/create_post', () => {
                     ...actionsProp,
                     openModal,
                 },
-            })
+            }),
         );
 
         wrapper.setState({
@@ -492,7 +685,7 @@ describe('components/create_post', () => {
                     ...actionsProp,
                     addReaction,
                 },
-            })
+            }),
         );
 
         wrapper.setState({
@@ -512,7 +705,7 @@ describe('components/create_post', () => {
                     ...actionsProp,
                     removeReaction,
                 },
-            })
+            }),
         );
 
         wrapper.setState({
@@ -560,7 +753,7 @@ describe('components/create_post', () => {
                     ...actionsProp,
                     setDraft,
                 },
-            })
+            }),
         );
 
         const instance = wrapper.instance();
@@ -586,7 +779,7 @@ describe('components/create_post', () => {
                     ...actionsProp,
                     setDraft,
                 },
-            })
+            }),
         );
 
         const instance = wrapper.instance();
@@ -626,7 +819,7 @@ describe('components/create_post', () => {
                     ...actionsProp,
                     setDraft,
                 },
-            })
+            }),
         );
 
         const instance = wrapper.instance();
@@ -678,7 +871,7 @@ describe('components/create_post', () => {
                     ...draftProp,
                     ...uploadsInProgressDraft,
                 },
-            })
+            }),
         );
 
         const instance = wrapper.instance();
@@ -708,7 +901,7 @@ describe('components/create_post', () => {
         }));
 
         const instance = wrapper.instance();
-        instance.refs = {textbox: {getWrappedInstance: () => ({blur: jest.fn()})}};
+        instance.refs = {textbox: {blur: jest.fn()}};
 
         instance.handleKeyDown({ctrlKey: true, key: Constants.KeyCodes.ENTER[0], keyCode: Constants.KeyCodes.ENTER[1], preventDefault: jest.fn(), persist: jest.fn()});
         setTimeout(() => {
@@ -755,7 +948,7 @@ describe('components/create_post', () => {
                 return new Promise((resolve) => {
                     process.nextTick(() => resolve());
                 });
-            }
+            },
         );
         const wrapper = shallowWithIntl(createPost({
             actions: {
@@ -775,7 +968,7 @@ describe('components/create_post', () => {
                 return new Promise((resolve) => {
                     process.nextTick(() => resolve());
                 });
-            }
+            },
         );
         const wrapper = shallowWithIntl(createPost({
             actions: {
@@ -873,7 +1066,7 @@ describe('components/create_post', () => {
                     executeCommand,
                     onSubmitPost,
                 },
-            })
+            }),
         );
 
         wrapper.setState({
@@ -912,7 +1105,7 @@ describe('components/create_post', () => {
                     executeCommand,
                     onSubmitPost,
                 },
-            })
+            }),
         );
 
         wrapper.setState({
@@ -948,7 +1141,7 @@ describe('components/create_post', () => {
                 focus: jest.fn(),
             };
         };
-        wrapper.instance().refs = {textbox: {getWrappedInstance: () => ({getInputBox: jest.fn(mockImpl), focus: jest.fn(), blur: jest.fn()})}};
+        wrapper.instance().refs = {textbox: {getInputBox: jest.fn(mockImpl), focus: jest.fn(), blur: jest.fn()}};
 
         const event = {
             target: {
@@ -974,7 +1167,10 @@ describe('components/create_post', () => {
         const wrapper = shallowWithIntl(createPost());
 
         const message = 'original message';
-        wrapper.setState({message});
+        wrapper.setState({
+            message,
+            caretPosition: message.length,
+        });
 
         const event = {
             target: {
@@ -990,8 +1186,22 @@ describe('components/create_post', () => {
             },
         };
 
-        const markdownTable = '|test | test|\n|--- | ---|\n|test | test|\n';
-        const expectedMessage = `${message}\n\n${markdownTable}`;
+        const markdownTable = '|test | test|\n|--- | ---|\n|test | test|\n\n';
+        const expectedMessage = `${message}\n${markdownTable}`;
+
+        const mockTop = () => {
+            return document.createElement('div');
+        };
+
+        const mockImpl = () => {
+            return {
+                setSelectionRange: jest.fn(),
+                getBoundingClientRect: jest.fn(mockTop),
+                focus: jest.fn(),
+            };
+        };
+
+        wrapper.instance().refs = {textbox: {getInputBox: jest.fn(mockImpl), focus: jest.fn(), blur: jest.fn()}};
 
         wrapper.instance().pasteHandler(event);
         expect(wrapper.state('message')).toBe(expectedMessage);
@@ -1005,7 +1215,7 @@ describe('components/create_post', () => {
                 focus: jest.fn(),
             };
         };
-        wrapper.instance().refs = {textbox: {getWrappedInstance: () => ({getInputBox: jest.fn(mockImpl), focus: jest.fn(), blur: jest.fn()})}};
+        wrapper.instance().refs = {textbox: {getInputBox: jest.fn(mockImpl), focus: jest.fn(), blur: jest.fn()}};
 
         const event = {
             target: {
@@ -1038,7 +1248,7 @@ describe('components/create_post', () => {
                 focus: jest.fn(),
             };
         };
-        wrapper.instance().refs = {textbox: {getWrappedInstance: () => ({getInputBox: jest.fn(mockImpl), focus: jest.fn(), blur: jest.fn()})}};
+        wrapper.instance().refs = {textbox: {getInputBox: jest.fn(mockImpl), focus: jest.fn(), blur: jest.fn()}};
         wrapper.setState({
             message: 'test',
             caretPosition: 'test'.length, // cursor is at the end
@@ -1087,4 +1297,9 @@ describe('components/create_post', () => {
 
         expect(saveButton.hasClass('disabled')).toBe(false);
     });
+
+    testComponentForLineBreak(
+        (value) => createPost({draft: {...draftProp, message: value}}),
+        (instance) => instance.state().message,
+    );
 });

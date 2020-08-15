@@ -1,5 +1,6 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
+/* eslint-disable react/no-string-refs */
 
 import React from 'react';
 import PropTypes from 'prop-types';
@@ -43,6 +44,7 @@ import * as Utils from 'utils/utils';
 import ChannelHeaderPlug from 'plugins/channel_header_plug';
 
 import HeaderIconWrapper from './components/header_icon_wrapper';
+import UserGuideDropdown from './components/user_guide_dropdown';
 
 const headerMarkdownOptions = {singleline: true, mentionHighlight: false, atMentions: true};
 const popoverMarkdownOptions = {singleline: false, mentionHighlight: false, atMentions: true};
@@ -67,6 +69,7 @@ class ChannelHeader extends React.PureComponent {
         rhsOpen: PropTypes.bool,
         isQuickSwitcherOpen: PropTypes.bool,
         intl: intlShape.isRequired,
+        pinnedPostsCount: PropTypes.number,
         hasMoreThanOneTeam: PropTypes.bool,
         actions: PropTypes.shape({
             favoriteChannel: PropTypes.func.isRequired,
@@ -416,7 +419,6 @@ class ChannelHeader extends React.PureComponent {
         if (isDirect && !dmUser.delete_at && !dmUser.is_bot) {
             dmHeaderIconStatus = (
                 <StatusIcon
-                    type='avatar'
                     status={channel.status}
                 />
             );
@@ -504,7 +506,7 @@ class ChannelHeader extends React.PureComponent {
                     if (!isDirect || !dmUser.is_bot) {
                         editMessage = (
                             <button
-                                className='style--none'
+                                className='header-placeholder style--none'
                                 onClick={this.showEditChannelHeaderModal}
                             >
                                 <FormattedMessage
@@ -528,7 +530,7 @@ class ChannelHeader extends React.PureComponent {
                             permissions={[isPrivate ? Permissions.MANAGE_PRIVATE_CHANNEL_PROPERTIES : Permissions.MANAGE_PUBLIC_CHANNEL_PROPERTIES]}
                         >
                             <button
-                                className='style--none'
+                                className='header-placeholder style--none'
                                 onClick={this.showEditChannelHeaderModal}
                             >
                                 <FormattedMessage
@@ -566,10 +568,10 @@ class ChannelHeader extends React.PureComponent {
         if (!channelIsArchived) {
             const formattedMessage = isFavorite ? {
                 id: 'channelHeader.removeFromFavorites',
-                defaultMessage: 'Remove from Favorites'
+                defaultMessage: 'Remove from Favorites',
             } : {
                 id: 'channelHeader.addToFavorites',
-                defaultMessage: 'Add to Favorites'
+                defaultMessage: 'Add to Favorites',
             };
 
             ariaLabel = formatMessage(formattedMessage).toLowerCase();
@@ -631,20 +633,37 @@ class ChannelHeader extends React.PureComponent {
             );
         }
 
-        let pinnedIconClass = 'channel-header__icon';
+        let pinnedIconClass = 'channel-header__icon channel-header__icon--wide';
         if (rhsState === RHSStates.PIN) {
-            pinnedIconClass += ' active';
+            pinnedIconClass += ' channel-header__icon--active';
         }
 
         let mentionsIconClass = 'channel-header__icon';
         if (rhsState === RHSStates.MENTION) {
-            mentionsIconClass += ' active';
+            mentionsIconClass += ' channel-header__icon--active';
         }
 
         let flaggedIconClass = 'channel-header__icon';
         if (rhsState === RHSStates.FLAG) {
-            flaggedIconClass += ' active';
+            flaggedIconClass += ' channel-header__icon--active';
         }
+        const pinnedIcon = (this.props.pinnedPostsCount ?
+            (<React.Fragment>
+                <PinIcon
+                    className='icon icon--standard'
+                    aria-hidden='true'
+                />
+                <span
+                    id='channelPinnedPostCountText'
+                    className='icon__text'
+                >
+                    {this.props.pinnedPostsCount}
+                </span>
+            </React.Fragment>) : (
+                <PinIcon
+                    className='icon icon--standard'
+                    aria-hidden='true'
+                />));
 
         let title = (
             <React.Fragment>
@@ -738,18 +757,14 @@ class ChannelHeader extends React.PureComponent {
                         channelMember={channelMember}
                     />
                     <HeaderIconWrapper
-                        iconComponent={
-                            <PinIcon
-                                className='icon icon__pin'
-                                aria-hidden='true'
-                            />
-                        }
+                        iconComponent={pinnedIcon}
                         ariaLabel={true}
-                        buttonClass={'style--none ' + pinnedIconClass}
+                        buttonClass={pinnedIconClass}
                         buttonId={'channelHeaderPinButton'}
                         onClick={this.showPinnedPosts}
                         tooltipKey={'pinnedPosts'}
                     />
+
                     {this.state.showSearchBar ? (
                         <div
                             id='searchbarContainer'
@@ -764,7 +779,7 @@ class ChannelHeader extends React.PureComponent {
                         <HeaderIconWrapper
                             iconComponent={
                                 <SearchIcon
-                                    className='icon icon__search icon--stroke'
+                                    className='icon icon--standard'
                                     aria-hidden='true'
                                 />
                             }
@@ -777,12 +792,12 @@ class ChannelHeader extends React.PureComponent {
                     <HeaderIconWrapper
                         iconComponent={
                             <MentionsIcon
-                                className='icon icon__mentions'
+                                className='icon icon--standard'
                                 aria-hidden='true'
                             />
                         }
                         ariaLabel={true}
-                        buttonClass={'style--none ' + mentionsIconClass}
+                        buttonClass={mentionsIconClass}
                         buttonId={'channelHeaderMentionButton'}
                         onClick={this.searchMentions}
                         tooltipKey={'recentMentions'}
@@ -792,11 +807,12 @@ class ChannelHeader extends React.PureComponent {
                             <FlagIcon className='icon icon__flag'/>
                         }
                         ariaLabel={true}
-                        buttonClass={'style--none ' + flaggedIconClass}
+                        buttonClass={flaggedIconClass}
                         buttonId={'channelHeaderFlagButton'}
                         onClick={this.getFlagged}
                         tooltipKey={'flaggedPosts'}
                     />
+                    <UserGuideDropdown/>
                 </div>
             </div>
         );
@@ -804,3 +820,4 @@ class ChannelHeader extends React.PureComponent {
 }
 
 export default injectIntl(ChannelHeader);
+/* eslint-enable react/no-string-refs */

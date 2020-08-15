@@ -1,5 +1,6 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
+/* eslint-disable react/no-string-refs */
 
 import PropTypes from 'prop-types';
 import React from 'react';
@@ -118,7 +119,7 @@ export default class PostInfo extends React.PureComponent {
             /**
              * Function to set or unset emoji picker for last message
              */
-            emitShortcutReactToLastPostFrom: PropTypes.func
+            emitShortcutReactToLastPostFrom: PropTypes.func,
         }).isRequired,
 
         shouldShowDotMenu: PropTypes.bool.isRequired,
@@ -129,7 +130,7 @@ export default class PostInfo extends React.PureComponent {
 
         this.state = {
             showEmojiPicker: false,
-            showOptionsMenuWithoutHover: false
+            showOptionsMenuWithoutHover: false,
         };
 
         this.postHeaderRef = React.createRef();
@@ -140,7 +141,7 @@ export default class PostInfo extends React.PureComponent {
 
         this.setState({
             showEmojiPicker,
-            showOptionsMenuWithoutHover: false
+            showOptionsMenuWithoutHover: false,
         });
         this.props.handleDropdownOpened(showEmojiPicker || this.state.showDotMenu);
     };
@@ -219,8 +220,20 @@ export default class PostInfo extends React.PureComponent {
                     handleCommentClick={this.props.handleCommentClick}
                     handleDropdownOpened={this.handleDotMenuOpened}
                     handleAddReactionClick={this.toggleEmojiPicker}
+                    isMenuOpen={this.state.showDotMenu}
                     isReadOnly={isReadOnly}
                     enableEmojiPicker={this.props.enableEmojiPicker}
+                />
+            );
+        }
+
+        const showFlagIcon = !isSystemMessage && !isMobile && (hover || this.props.isFlagged);
+        let postFlagIcon;
+        if (showFlagIcon) {
+            postFlagIcon = (
+                <PostFlagIcon
+                    postId={post.id}
+                    isFlagged={this.props.isFlagged}
                 />
             );
         }
@@ -229,10 +242,11 @@ export default class PostInfo extends React.PureComponent {
             <div
                 ref='dotMenu'
                 data-testid={`post-menu-${post.id}`}
-                className={'col col__reply'}
+                className={'col post-menu'}
             >
                 {dotMenu}
                 {postReaction}
+                {postFlagIcon}
                 {commentIcon}
             </div>
         );
@@ -261,7 +275,7 @@ export default class PostInfo extends React.PureComponent {
             if (isPostHeaderVisibleToUser && !isEphemeralPost && !isSystemMessage && !isAutoRespondersPost &&
                     !isFailedPost && !isDeletedPost && !isReadOnly && !isMobile && enableEmojiPicker) {
                 this.setState({
-                    showOptionsMenuWithoutHover: true
+                    showOptionsMenuWithoutHover: true,
                 }, () => {
                     this.toggleEmojiPicker();
                 });
@@ -285,18 +299,6 @@ export default class PostInfo extends React.PureComponent {
         const isEphemeral = Utils.isPostEphemeral(post);
         const isSystemMessage = PostUtils.isSystemMessage(post);
         const fromAutoResponder = PostUtils.fromAutoResponder(post);
-
-        const showFlagIcon = !isEphemeral && !post.failed && !isSystemMessage && (this.props.hover || this.props.isFlagged);
-        let postFlagIcon;
-        if (showFlagIcon) {
-            postFlagIcon = (
-                <PostFlagIcon
-                    postId={post.id}
-                    isFlagged={this.props.isFlagged}
-                    isEphemeral={isEphemeral}
-                />
-            );
-        }
 
         let postInfoIcon;
         if (post.props && post.props.card) {
@@ -352,18 +354,6 @@ export default class PostInfo extends React.PureComponent {
             );
         }
 
-        let pinnedBadge;
-        if (post.is_pinned) {
-            pinnedBadge = (
-                <span className='post__pinned-badge'>
-                    <FormattedMessage
-                        id='post_info.pinned'
-                        defaultMessage='Pinned'
-                    />
-                </span>
-            );
-        }
-
         const showPostTime = this.props.hover || this.props.showTimeWithoutHover;
         let postTime;
         if (showPostTime) {
@@ -386,9 +376,7 @@ export default class PostInfo extends React.PureComponent {
             >
                 <div className='col'>
                     {postTime}
-                    {pinnedBadge}
                     {postInfoIcon}
-                    {postFlagIcon}
                     {visibleMessage}
                 </div>
                 {options}
@@ -396,3 +384,4 @@ export default class PostInfo extends React.PureComponent {
         );
     }
 }
+/* eslint-enable react/no-string-refs */

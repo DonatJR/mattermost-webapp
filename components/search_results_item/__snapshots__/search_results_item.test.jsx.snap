@@ -18,6 +18,11 @@ exports[`components/SearchResultsItem should match snapshot for DM 1`] = `
     >
       Direct Message (with Other guy)
     </div>
+    <Connect(injectIntl(PostPreHeader))
+      channelId="channel_id"
+      isFlagged={true}
+      isPinned={true}
+    />
     <div
       className="post__content"
       role="application"
@@ -75,27 +80,14 @@ exports[`components/SearchResultsItem should match snapshot for DM 1`] = `
               location="SEARCH"
               postId="id"
             />
-            <span
-              className="post__pinned-badge"
-            >
-              <FormattedMessage
-                defaultMessage="Pinned"
-                id="post_info.pinned"
-                values={Object {}}
-              />
-            </span>
-            <Connect(PostFlagIcon)
-              isFlagged={true}
-              location="SEARCH"
-              postId="id"
-            />
           </div>
           <div
-            className="col__controls col__reply"
+            className="col__controls post-menu"
           >
             <Connect(DotMenu)
               handleDropdownOpened={[Function]}
               isFlagged={true}
+              isMenuOpen={false}
               isReadOnly={null}
               location="SEARCH"
               post={
@@ -117,6 +109,11 @@ exports[`components/SearchResultsItem should match snapshot for DM 1`] = `
                   "user_id": "user_id",
                 }
               }
+            />
+            <Connect(PostFlagIcon)
+              isFlagged={true}
+              location="SEARCH"
+              postId="id"
             />
             <CommentIcon
               commentCount={0}
@@ -240,6 +237,11 @@ exports[`components/SearchResultsItem should match snapshot for archived channel
         />
       </span>
     </div>
+    <Connect(injectIntl(PostPreHeader))
+      channelId="channel_id"
+      isFlagged={true}
+      isPinned={false}
+    />
     <div
       className="post__content"
       role="application"
@@ -297,18 +299,14 @@ exports[`components/SearchResultsItem should match snapshot for archived channel
               location="SEARCH"
               postId="id"
             />
-            <Connect(PostFlagIcon)
-              isFlagged={true}
-              location="SEARCH"
-              postId="id"
-            />
           </div>
           <div
-            className="col__controls col__reply"
+            className="col__controls post-menu"
           >
             <Connect(DotMenu)
               handleDropdownOpened={[Function]}
               isFlagged={true}
+              isMenuOpen={false}
               isReadOnly={true}
               location="SEARCH"
               post={
@@ -330,6 +328,11 @@ exports[`components/SearchResultsItem should match snapshot for archived channel
                   "user_id": "user_id",
                 }
               }
+            />
+            <Connect(PostFlagIcon)
+              isFlagged={true}
+              location="SEARCH"
+              postId="id"
             />
             <CommentIcon
               commentCount={0}
@@ -441,6 +444,11 @@ exports[`components/SearchResultsItem should match snapshot for channel 1`] = `
     >
       channel_name
     </div>
+    <Connect(injectIntl(PostPreHeader))
+      channelId="channel_id"
+      isFlagged={true}
+      isPinned={false}
+    />
     <div
       className="post__content"
       role="application"
@@ -498,18 +506,14 @@ exports[`components/SearchResultsItem should match snapshot for channel 1`] = `
               location="SEARCH"
               postId="id"
             />
-            <Connect(PostFlagIcon)
-              isFlagged={true}
-              location="SEARCH"
-              postId="id"
-            />
           </div>
           <div
-            className="col__controls col__reply"
+            className="col__controls post-menu"
           >
             <Connect(DotMenu)
               handleDropdownOpened={[Function]}
               isFlagged={true}
+              isMenuOpen={false}
               isReadOnly={null}
               location="SEARCH"
               post={
@@ -531,6 +535,11 @@ exports[`components/SearchResultsItem should match snapshot for channel 1`] = `
                   "user_id": "user_id",
                 }
               }
+            />
+            <Connect(PostFlagIcon)
+              isFlagged={true}
+              location="SEARCH"
+              postId="id"
             />
             <CommentIcon
               commentCount={0}
@@ -642,6 +651,11 @@ exports[`components/SearchResultsItem should match snapshot for deleted message 
     >
       channel_name
     </div>
+    <Connect(injectIntl(PostPreHeader))
+      channelId="channel_id"
+      isFlagged={true}
+      isPinned={false}
+    />
     <div
       className="post__content"
       role="application"
@@ -779,6 +793,11 @@ exports[`components/SearchResultsItem should match snapshot for deleted message 
     >
       channel_name
     </div>
+    <Connect(injectIntl(PostPreHeader))
+      channelId="channel_id"
+      isFlagged={true}
+      isPinned={false}
+    />
     <div
       className="post__content"
       role="application"

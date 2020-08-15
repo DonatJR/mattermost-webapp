@@ -7,13 +7,12 @@
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
 
-import users from '../../fixtures/users';
+// Stage: @prod
+// Group: @channel_sidebar
 
 import {testWithConfig} from '../../support/hooks';
-
-import {getRandomInt} from '../../utils';
-
-const sysadmin = users.sysadmin;
+import {getAdminAccount} from '../../support/env';
+import {getRandomId} from '../../utils';
 
 describe('Channel sidebar', () => {
     testWithConfig({
@@ -22,42 +21,47 @@ describe('Channel sidebar', () => {
         },
     });
 
-    before(() => {
-        cy.apiLogin('user-1');
+    const sysadmin = getAdminAccount();
 
-        cy.visit('/');
+    before(() => {
+        // # Login as test user and visit town-square
+        cy.apiInitSetup({loginAfter: true}).then(({team}) => {
+            cy.visit(`/${team.name}/channels/town-square`);
+        });
+
+        // # Close "What's new" modal
+        cy.uiCloseWhatsNewModal();
     });
 
     it('should switch channels when clicking on a channel in the sidebar', () => {
         // # Start with a new team
-        const teamName = `team-${getRandomInt(999999)}`;
+        const teamName = `team-${getRandomId()}`;
         cy.createNewTeam(teamName, teamName);
 
         // * Verify that we've switched to the new team
-        cy.get('#headerTeamName').should('contain', teamName);
+        cy.get('#headerTeamName').should('be.visible').should('be.visible').should('contain', teamName);
 
         // # Click on Off Topic
         cy.get('.SidebarChannel:contains(Off-Topic)').should('be.visible').click();
 
         // * Verify that the channel changed
         cy.url().should('include', `/${teamName}/channels/off-topic`);
-        cy.get('#channelHeaderTitle').should('contain', 'Off-Topic');
+        cy.get('#channelHeaderTitle').should('be.visible').should('contain', 'Off-Topic');
 
         // # Click on Town Square
         cy.get('.SidebarChannel:contains(Town Square)').should('be.visible').click();
 
         // * Verify that the channel changed
-        cy.url().should('include', `/${teamName}/channels/town-square`);
-        cy.get('#channelHeaderTitle').should('contain', 'Town Square');
+        verifyChannelSwitch('Town Square', `/${teamName}/channels/town-square`);
     });
 
     it('should mark channel as read and unread in sidebar', () => {
         // # Start with a new team
-        const teamName = `team-${getRandomInt(999999)}`;
+        const teamName = `team-${getRandomId()}`;
         cy.createNewTeam(teamName, teamName);
 
         // * Verify that we've switched to the new team
-        cy.get('#headerTeamName').should('contain', teamName);
+        cy.get('#headerTeamName').should('be.visible').should('contain', teamName);
 
         // * Verify that both Off Topic and Town Square are read
         cy.get('.SidebarChannel:not(.unread):contains(Off-Topic)').should('be.visible');
@@ -78,25 +82,24 @@ describe('Channel sidebar', () => {
 
     it('should remove channel from sidebar after leaving it', () => {
         // # Start with a new team
-        const teamName = `team-${getRandomInt(999999)}`;
+        const teamName = `team-${getRandomId()}`;
         cy.createNewTeam(teamName, teamName);
 
         // * Verify that we've switched to the new team
-        cy.get('#headerTeamName').should('contain', teamName);
+        cy.get('#headerTeamName').should('be.visible').should('contain', teamName);
 
         // # Switch to Off Topic
         cy.visit(`/${teamName}/channels/off-topic`);
 
         // # Wait for the channel to change
-        cy.get('#channelHeaderTitle').should('contain', 'Off-Topic');
+        cy.get('#channelHeaderTitle').should('be.visible').should('contain', 'Off-Topic');
 
         // # Click on the channel menu and select Leave Channel
         cy.get('#channelHeaderTitle').click();
-        cy.get('#channelLeaveChannel').click();
+        cy.get('#channelLeaveChannel').should('be.visible').click();
 
         // * Verify that we've switched to Town Square
-        cy.url().should('include', `/${teamName}/channels/town-square`);
-        cy.get('#channelHeaderTitle').should('contain', 'Town Square');
+        verifyChannelSwitch('Town Square', `/${teamName}/channels/town-square`);
 
         // * Verify that Off Topic has disappeared from the sidebar
         cy.get('.SidebarChannel:contains(Off-Topic)').should('not.exist');
@@ -104,28 +107,32 @@ describe('Channel sidebar', () => {
 
     it('MM-23239 should remove channel from sidebar after deleting it', () => {
         // # Start with a new team
-        const teamName = `team-${getRandomInt(999999)}`;
+        const teamName = `team-${getRandomId()}`;
         cy.createNewTeam(teamName, teamName);
 
         // * Verify that we've switched to the new team
-        cy.get('#headerTeamName').should('contain', teamName);
+        cy.get('#headerTeamName').should('be.visible').should('contain', teamName);
 
         // # Switch to Off Topic
         cy.visit(`/${teamName}/channels/off-topic`);
 
         // # Wait for the channel to change
-        cy.get('#channelHeaderTitle').should('contain', 'Off-Topic');
+        cy.get('#channelHeaderTitle').should('be.visible').should('contain', 'Off-Topic');
 
         // # Click on the channel menu and select Leave Channel
         cy.get('#channelHeaderTitle').click();
-        cy.get('#channelArchiveChannel').click();
-        cy.get('#deleteChannelModalDeleteButton').click();
+        cy.get('#channelArchiveChannel').should('be.visible').click();
+        cy.get('#deleteChannelModalDeleteButton').should('be.visible').click();
 
         // * Verify that we've switched to Town Square
-        cy.url().should('include', `/${teamName}/channels/town-square`);
-        cy.get('#channelHeaderTitle').should('contain', 'Town Square');
+        verifyChannelSwitch('Town Square', `/${teamName}/channels/town-square`);
 
         // * Verify that Off Topic has disappeared from the sidebar
         cy.get('.SidebarChannel:contains(Off-Topic)').should('not.exist');
     });
+
+    function verifyChannelSwitch(displayName, url) {
+        cy.get('#channelHeaderTitle').should('be.visible').should('contain', displayName);
+        cy.url().should('include', url);
+    }
 });
