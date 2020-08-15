@@ -246,24 +246,12 @@ exports[`components/Menu should match snapshot with id 1`] = `
   </MenuGroup>
   <MenuGroup />
   <MenuGroup>
-    <Connect(TeamPermissionGate)
-      permissions={
-        Array [
-          "manage_slash_commands",
-          "manage_oauth",
-          "manage_incoming_webhooks",
-          "manage_outgoing_webhooks",
-        ]
-      }
-      teamId="team-id"
-    >
-      <MenuItemLink
-        id="integrations"
-        show={false}
-        text="Integrations"
-        to="/team_name/integrations"
-      />
-    </Connect(TeamPermissionGate)>
+    <MenuItemLink
+      id="integrations"
+      show={false}
+      text="Integrations"
+      to="/team_name/integrations"
+    />
     <Connect(TeamPermissionGate)
       permissions={
         Array [
@@ -614,24 +602,12 @@ exports[`components/Menu should match snapshot with most of the thing disabled 1
   </MenuGroup>
   <MenuGroup />
   <MenuGroup>
-    <Connect(TeamPermissionGate)
-      permissions={
-        Array [
-          "manage_slash_commands",
-          "manage_oauth",
-          "manage_incoming_webhooks",
-          "manage_outgoing_webhooks",
-        ]
-      }
-      teamId="team-id"
-    >
-      <MenuItemLink
-        id="integrations"
-        show={false}
-        text="Integrations"
-        to="/team_name/integrations"
-      />
-    </Connect(TeamPermissionGate)>
+    <MenuItemLink
+      id="integrations"
+      show={false}
+      text="Integrations"
+      to="/team_name/integrations"
+    />
     <Connect(TeamPermissionGate)
       permissions={
         Array [
@@ -1028,24 +1004,12 @@ exports[`components/Menu should match snapshot with most of the thing disabled i
   </MenuGroup>
   <MenuGroup />
   <MenuGroup>
-    <Connect(TeamPermissionGate)
-      permissions={
-        Array [
-          "manage_slash_commands",
-          "manage_oauth",
-          "manage_incoming_webhooks",
-          "manage_outgoing_webhooks",
-        ]
-      }
-      teamId="team-id"
-    >
-      <MenuItemLink
-        id="integrations"
-        show={false}
-        text="Integrations"
-        to="/team_name/integrations"
-      />
-    </Connect(TeamPermissionGate)>
+    <MenuItemLink
+      id="integrations"
+      show={false}
+      text="Integrations"
+      to="/team_name/integrations"
+    />
     <Connect(TeamPermissionGate)
       permissions={
         Array [
@@ -1420,24 +1384,12 @@ exports[`components/Menu should match snapshot with most of the thing enabled 1`
   </MenuGroup>
   <MenuGroup />
   <MenuGroup>
-    <Connect(TeamPermissionGate)
-      permissions={
-        Array [
-          "manage_slash_commands",
-          "manage_oauth",
-          "manage_incoming_webhooks",
-          "manage_outgoing_webhooks",
-        ]
-      }
-      teamId="team-id"
-    >
-      <MenuItemLink
-        id="integrations"
-        show={true}
-        text="Integrations"
-        to="/team_name/integrations"
-      />
-    </Connect(TeamPermissionGate)>
+    <MenuItemLink
+      id="integrations"
+      show={true}
+      text="Integrations"
+      to="/team_name/integrations"
+    />
     <Connect(TeamPermissionGate)
       permissions={
         Array [
@@ -1834,24 +1786,12 @@ exports[`components/Menu should match snapshot with most of the thing enabled in
   </MenuGroup>
   <MenuGroup />
   <MenuGroup>
-    <Connect(TeamPermissionGate)
-      permissions={
-        Array [
-          "manage_slash_commands",
-          "manage_oauth",
-          "manage_incoming_webhooks",
-          "manage_outgoing_webhooks",
-        ]
-      }
-      teamId="team-id"
-    >
-      <MenuItemLink
-        id="integrations"
-        show={false}
-        text="Integrations"
-        to="/team_name/integrations"
-      />
-    </Connect(TeamPermissionGate)>
+    <MenuItemLink
+      id="integrations"
+      show={false}
+      text="Integrations"
+      to="/team_name/integrations"
+    />
     <Connect(TeamPermissionGate)
       permissions={
         Array [
@@ -2243,24 +2183,12 @@ exports[`components/Menu should match snapshot with plugins 1`] = `
     />
   </MenuGroup>
   <MenuGroup>
-    <Connect(TeamPermissionGate)
-      permissions={
-        Array [
-          "manage_slash_commands",
-          "manage_oauth",
-          "manage_incoming_webhooks",
-          "manage_outgoing_webhooks",
-        ]
-      }
-      teamId="team-id"
-    >
-      <MenuItemLink
-        id="integrations"
-        show={false}
-        text="Integrations"
-        to="/team_name/integrations"
-      />
-    </Connect(TeamPermissionGate)>
+    <MenuItemLink
+      id="integrations"
+      show={false}
+      text="Integrations"
+      to="/team_name/integrations"
+    />
     <Connect(TeamPermissionGate)
       permissions={
         Array [
@@ -2674,24 +2602,12 @@ exports[`components/Menu should match snapshot with plugins in mobile 1`] = `
     />
   </MenuGroup>
   <MenuGroup>
-    <Connect(TeamPermissionGate)
-      permissions={
-        Array [
-          "manage_slash_commands",
-          "manage_oauth",
-          "manage_incoming_webhooks",
-          "manage_outgoing_webhooks",
-        ]
-      }
-      teamId="team-id"
-    >
-      <MenuItemLink
-        id="integrations"
-        show={false}
-        text="Integrations"
-        to="/team_name/integrations"
-      />
-    </Connect(TeamPermissionGate)>
+    <MenuItemLink
+      id="integrations"
+      show={false}
+      text="Integrations"
+      to="/team_name/integrations"
+    />
     <Connect(TeamPermissionGate)
       permissions={
         Array [

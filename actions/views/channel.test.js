@@ -760,15 +760,4 @@ describe('channel view actions', () => {
             expect(PostActions.getPostsUnread).toHaveBeenCalledWith('channelid1');
         });
     });
-
-    describe('updateToastStatus', () => {
-        test('should disptach updateToastStatus action with the true as argument', async () => {
-            await store.dispatch(Actions.updateToastStatus(true));
-
-            expect(store.getActions()).toEqual([{
-                data: true,
-                type: 'UPDATE_TOAST_STATUS'
-            }]);
-        });
-    });
 });

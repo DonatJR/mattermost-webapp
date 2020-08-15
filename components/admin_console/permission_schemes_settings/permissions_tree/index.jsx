@@ -7,8 +7,6 @@ import {getConfig, getLicense} from 'mattermost-redux/selectors/entities/general
 
 import Permissions from 'mattermost-redux/constants/permissions';
 
-import Permissions from 'mattermost-redux/constants/permissions';
-
 import PermissionsTree from './permissions_tree.jsx';
 
 export const EXCLUDED_PERMISSIONS = [

@@ -223,34 +223,4 @@ describe('components/ChannelHeader', () => {
             <GuestBadge show={true}/>,
         )).toEqual(true);
     });
-
-    test('should render the guest badges on gms', () => {
-        const props = {
-            ...populatedProps,
-            channel: {
-                header: 'test',
-                display_name: 'regular_user, guest_user',
-                type: Constants.GM_CHANNEL,
-            },
-            gmMembers: [
-                {
-                    id: 'user_id',
-                    username: 'regular_user',
-                    roles: 'system_user',
-                },
-                {
-                    id: 'guest_id',
-                    username: 'guest_user',
-                    roles: 'system_guest',
-                },
-            ],
-        };
-
-        const wrapper = shallowWithIntl(
-            <ChannelHeader {...props}/>
-        );
-        expect(wrapper.containsMatchingElement(
-            <GuestBadge show={true}/>
-        )).toEqual(true);
-    });
 });

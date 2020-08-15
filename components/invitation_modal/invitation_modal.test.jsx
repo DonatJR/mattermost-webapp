@@ -97,16 +97,4 @@ describe('components/invitation_modal/InvitationModal', () => {
         expect(props.actions.getTeam).toHaveBeenCalledTimes(1);
         expect(props.actions.getTeam).toHaveBeenCalledWith(props.currentTeam.id);
     });
-
-    test('should work properly with full inside (and with the reference to the modal)', () => {
-        const props = {...defaultProps};
-        props.currentTeam.invite_id = '';
-        const wrapper = mountWithIntl(
-            <InvitationModal {...props}/>
-        );
-        wrapper.instance().goToMembers();
-
-        expect(props.actions.getTeam).toHaveBeenCalledTimes(1);
-        expect(props.actions.getTeam).toHaveBeenCalledWith(props.currentTeam.id);
-    });
 });
