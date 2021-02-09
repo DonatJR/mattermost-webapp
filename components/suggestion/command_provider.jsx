@@ -3,17 +3,15 @@
 
 import React from 'react';
 
-import {Client4} from 'mattermost-redux/client';
-import {getCurrentTeamId} from 'mattermost-redux/selectors/entities/teams';
-import {getChannel, getCurrentChannel} from 'mattermost-redux/selectors/entities/channels';
+import { Client4 } from 'mattermost-redux/client';
+import { getCurrentTeamId } from 'mattermost-redux/selectors/entities/teams';
+import { getChannel, getCurrentChannel } from 'mattermost-redux/selectors/entities/channels';
 
 import store from 'stores/redux_store.jsx';
 
 import * as UserAgent from 'utils/user_agent';
 import * as Utils from 'utils/utils.jsx';
-import {getSelectedPost} from 'selectors/rhs';
-
-import * as Utils from 'utils/utils.jsx';
+import { getSelectedPost } from 'selectors/rhs';
 
 import Suggestion from './suggestion.jsx';
 import Provider from './provider.jsx';
@@ -22,7 +20,7 @@ export const EXECUTE_CURRENT_COMMAND_ITEM_ID = '_execute_current_command';
 
 export class CommandSuggestion extends Suggestion {
     render() {
-        const {item, isSelection} = this.props;
+        const { item, isSelection } = this.props;
 
         let className = 'slash-command';
         if (isSelection) {
@@ -37,9 +35,9 @@ export class CommandSuggestion extends Suggestion {
             icon = (
                 <div
                     className='slash-command__icon'
-                    style={{backgroundColor: 'transparent'}}
+                    style={{ backgroundColor: 'transparent' }}
                 >
-                    <img src={item.iconData}/>
+                    <img src={item.iconData} />
                 </div>);
         }
 
@@ -65,7 +63,7 @@ export class CommandSuggestion extends Suggestion {
 }
 
 export default class CommandProvider extends Provider {
-    constructor({isInRHS}) {
+    constructor({ isInRHS }) {
         super();
 
         this.isInRHS = isInRHS;
@@ -124,7 +122,7 @@ export default class CommandProvider extends Provider {
                 });
             },
         ).catch(
-            () => {}, //eslint-disable-line no-empty-function
+            () => { }, //eslint-disable-line no-empty-function
         );
 
         return true;
@@ -142,7 +140,7 @@ export default class CommandProvider extends Provider {
 
         const args = {
             channel_id: channel?.id,
-            ...(rootId && {root_id: rootId, parent_id: rootId}),
+            ...(rootId && { root_id: rootId, parent_id: rootId }),
         };
 
         Client4.getCommandAutocompleteSuggestionsList(command, teamId, args).then(
@@ -184,7 +182,7 @@ export default class CommandProvider extends Provider {
                 });
             },
         ).catch(
-            () => {}, //eslint-disable-line no-empty-function
+            () => { }, //eslint-disable-line no-empty-function
         );
 
         return true;
