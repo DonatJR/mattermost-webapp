@@ -13,7 +13,7 @@ import './data_grid.scss';
 
 type Props = {
     onSearch: (term: string) => void;
-    placeholder: string;
+    placeholder?: string;
     term: string;
 
     filterProps?: {
@@ -28,6 +28,11 @@ type State = {
 }
 
 class DataGridSearch extends React.PureComponent<Props, State> {
+    static defaultProps = {
+        placeholder: '',
+        term: '',
+    }
+
     public constructor(props: Props) {
         super(props);
 
@@ -78,6 +83,7 @@ class DataGridSearch extends React.PureComponent<Props, State> {
                         placeholder={Utils.localizeMessage('search_bar.search', 'Search')}
                         onChange={this.handleSearch}
                         value={this.props.term}
+                        data-testid='searchInput'
                     />
                     <i
                         className={'DataGrid_clearButton fa fa-times-circle ' + (this.props.term.length ? '' : 'hidden')}

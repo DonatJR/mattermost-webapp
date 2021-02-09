@@ -21,7 +21,7 @@ describe('Message Reply too long', () => {
         });
     });
 
-    it('M18689 - "Message too long" warning text', () => {
+    it('MM-T106 Webapp: "Message too long" warning text', () => {
         // # Click "Reply"
         cy.getLastPostId().then((postId) => {
             cy.clickPostCommentIcon(postId);
@@ -47,7 +47,7 @@ describe('Message Reply too long', () => {
         cy.get('#reply_textbox').type('{enter}');
 
         // * Check warning
-        cy.get('.post-error').should('be.visible').and('have.class', 'animation--highlight').and('have.text', `Your message is too long. Character count: ${replyTooLong.length}/${maxReplyLength}`);
+        cy.get('.post-error').should('be.visible').and('have.text', `Your message is too long. Character count: ${replyTooLong.length}/${maxReplyLength}`);
         cy.get('#reply_textbox').should('be.visible');
 
         // * Check last reply is the last valid one

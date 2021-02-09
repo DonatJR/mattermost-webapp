@@ -174,9 +174,7 @@ module.exports = {
             // If we have a user to add to the team, add them now
             if (userToAdd) {
                 // First get the user details by email of the user
-                return cy.apiGetUserByEmail(userToAdd.email).then((userResponse) => {
-                    const user = userResponse.body;
-
+                return cy.apiGetUserByEmail(userToAdd.email).then(({user}) => {
                     // Add user to team
                     cy.task('externalRequest', {
                         user: admin,
@@ -190,14 +188,14 @@ module.exports = {
                         expect(addResponse.status).to.equal(201);
 
                         // explicitly wait to give some to index before searching
-                        cy.wait(TIMEOUTS.HALF_SEC);
+                        cy.wait(TIMEOUTS.TWO_SEC);
                         return cy.wrap(channel);
                     });
                 });
             }
 
             // explicitly wait to give some to index before searching
-            cy.wait(TIMEOUTS.HALF_SEC);
+            cy.wait(TIMEOUTS.TWO_SEC);
             return cy.wrap(channel);
         });
     },

@@ -60,7 +60,7 @@ describe('System Message', () => {
         });
     });
 
-    it('MM-14636 - Validate that system message is wrapping properly', () => {
+    it('MM-T426 System messages wrap properly', () => {
         const newHeader = `${Date.now()} newheader`;
 
         // # Update channel header textbox
@@ -85,9 +85,10 @@ describe('System Message', () => {
         // * Check that the status is updated and is spread on more than one line
         cy.getLastPost().
             should('contain', 'System').
-            and('contain', `@${testUsername} updated the channel header from:`).
+            and('contain', `@${testUsername} updated the channel header`).
+            and('contain', 'From:').
             and('contain', newHeader).
-            and('contain', 'to:').
+            and('contain', 'To:').
             and('contain', newHeader.repeat(20));
 
         const validateMulti = (desc) => {

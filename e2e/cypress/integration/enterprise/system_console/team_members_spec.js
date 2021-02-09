@@ -8,6 +8,7 @@
 // ***************************************************************
 
 // Stage: @prod
+// Group: @enterprise
 
 import * as TIMEOUTS from '../../../fixtures/timeouts';
 
@@ -20,7 +21,7 @@ describe('Team members test', () => {
     before(() => {
         // # Login as sysadmin
         cy.apiAdminLogin().then((res) => {
-            sysadmin = res.body;
+            sysadmin = res.user;
         });
 
         // * Check if server has license
@@ -170,14 +171,14 @@ describe('Team members test', () => {
         });
 
         // * Assert user1 is now back to being a regular member
-        cy.get('#teamMembers .DataGrid_rows').children(0).should('contain', user1.email).and('not.contain', 'New').and('contain', 'Team Member');
+        cy.get('#teamMembers .DataGrid_rows').children(0).should('contain', user1.email).and('not.contain', 'New').and('contain', 'Member');
 
         // # Search user2 that we know is now in the team again
         searchFor(user2.email);
         cy.get('#teamMembers .DataGrid_loading').should('not.be.visible');
 
         // * Assert user2 is now saved as a regular member
-        cy.get('#teamMembers .DataGrid_rows').children(0).should('contain', user2.email).and('not.contain', 'New').and('contain', 'Team Member');
+        cy.get('#teamMembers .DataGrid_rows').children(0).should('contain', user2.email).and('not.contain', 'New').and('contain', 'Member');
 
         // # Attempt to save
         saveConfig();

@@ -42,6 +42,7 @@ describe('components/sidebar/sidebar_channel/sidebar_channel_menu', () => {
             display_name: 'custom_category_1',
             sorting: CategorySorting.Alphabetical,
             channel_ids: ['channel_id'],
+            muted: false,
         }],
         currentUserId: 'user_id',
         currentCategory: {
@@ -52,6 +53,7 @@ describe('components/sidebar/sidebar_channel/sidebar_channel_menu', () => {
             sorting: CategorySorting.Alphabetical,
             channel_ids: ['channel_id'],
             display_name: 'custom_category_1',
+            muted: false,
         },
         currentTeamId: 'team1',
         isUnread: false,
@@ -61,6 +63,8 @@ describe('components/sidebar/sidebar_channel/sidebar_channel_menu', () => {
         managePrivateChannelMembers: true,
         closeHandler: jest.fn(),
         isCollapsed: false,
+        isMenuOpen: false,
+        onToggleMenu: jest.fn(),
         actions: {
             markChannelAsRead: jest.fn(),
             favoriteChannel: jest.fn(),

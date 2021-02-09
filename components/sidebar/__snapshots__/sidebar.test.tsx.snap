@@ -29,19 +29,12 @@ exports[`components/sidebar should match snapshot 1`] = `
   <Connect(Pluggable)
     pluggableName="LeftSidebarHeader"
   />
-  <Connect(SidebarCategoryList)
+  <Connect(SidebarChannelList)
     handleOpenMoreDirectChannelsModal={[Function]}
     onDragEnd={[Function]}
     onDragStart={[Function]}
   />
   <Connect(DataPrefetch) />
-  <Connect(NewChannelFlow)
-    canCreatePrivateChannel={true}
-    canCreatePublicChannel={true}
-    channelType="O"
-    onModalDismissed={[Function]}
-    show={false}
-  />
 </div>
 `;
 
@@ -72,19 +65,12 @@ exports[`components/sidebar should match snapshot when direct channels modal is 
   <Connect(Pluggable)
     pluggableName="LeftSidebarHeader"
   />
-  <Connect(SidebarCategoryList)
+  <Connect(SidebarChannelList)
     handleOpenMoreDirectChannelsModal={[Function]}
     onDragEnd={[Function]}
     onDragStart={[Function]}
   />
   <Connect(DataPrefetch) />
-  <Connect(NewChannelFlow)
-    canCreatePrivateChannel={true}
-    canCreatePublicChannel={true}
-    channelType="O"
-    onModalDismissed={[Function]}
-    show={false}
-  />
   <Connect(MoreDirectChannels)
     isExistingChannel={false}
     onModalDismissed={[Function]}
@@ -119,17 +105,10 @@ exports[`components/sidebar should match snapshot when isDataPrefechEnabled is d
   <Connect(Pluggable)
     pluggableName="LeftSidebarHeader"
   />
-  <Connect(SidebarCategoryList)
+  <Connect(SidebarChannelList)
     handleOpenMoreDirectChannelsModal={[Function]}
     onDragEnd={[Function]}
     onDragStart={[Function]}
-  />
-  <Connect(NewChannelFlow)
-    canCreatePrivateChannel={true}
-    canCreatePublicChannel={true}
-    channelType="O"
-    onModalDismissed={[Function]}
-    show={false}
   />
 </div>
 `;
@@ -161,23 +140,11 @@ exports[`components/sidebar should match snapshot when more channels modal is op
   <Connect(Pluggable)
     pluggableName="LeftSidebarHeader"
   />
-  <Connect(SidebarCategoryList)
+  <Connect(SidebarChannelList)
     handleOpenMoreDirectChannelsModal={[Function]}
     onDragEnd={[Function]}
     onDragStart={[Function]}
   />
   <Connect(DataPrefetch) />
-  <Connect(NewChannelFlow)
-    canCreatePrivateChannel={true}
-    canCreatePublicChannel={true}
-    channelType="O"
-    onModalDismissed={[Function]}
-    show={false}
-  />
-  <Connect(MoreChannels)
-    handleNewChannel={[Function]}
-    morePublicChannelsModalType="public"
-    onModalDismissed={[Function]}
-  />
 </div>
 `;

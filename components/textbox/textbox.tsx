@@ -2,10 +2,11 @@
 // See LICENSE.txt for license information.
 /* eslint-disable react/no-string-refs */
 
-import React, {ChangeEvent, FocusEvent, KeyboardEvent, MouseEvent} from 'react';
+import React, {ChangeEvent, ElementType, FocusEvent, KeyboardEvent, MouseEvent} from 'react';
 import {FormattedMessage} from 'react-intl';
 
 import {Channel} from 'mattermost-redux/types/channels';
+import {UserProfile} from 'mattermost-redux/types/users';
 
 import AutosizeTextarea from 'components/autosize_textarea';
 import PostMarkdown from 'components/post_markdown';
@@ -30,6 +31,7 @@ type Props = {
     onHeightChange?: (height: number, maxHeight: number) => void;
     createMessage: string;
     onKeyDown?: (e: KeyboardEvent) => void;
+    onSelect?: (e: React.SyntheticEvent) => void;
     onMouseUp?: (e: MouseEvent) => void;
     onKeyUp?: (e: KeyboardEvent) => void;
     onBlur?: (e: FocusEvent) => void;
@@ -46,14 +48,16 @@ type Props = {
     currentTeamId: string;
     preview?: boolean;
     profilesInChannel: { id: string }[];
-    profilesNotInChannel: { id: string }[];
-    autocompleteGroups: { id: string }[];
+    autocompleteGroups: { id: string }[] | null;
     actions: {
         autocompleteUsersInChannel: (prefix: string, channelId: string | undefined) => (dispatch: any, getState: any) => Promise<string[]>;
         autocompleteChannels: (term: string, success: (channels: Channel[]) => void, error: () => void) => (dispatch: any, getState: any) => Promise<void>;
         searchAssociatedGroupsForReference: (prefix: string, teamId: string, channelId: string | undefined) => (dispatch: any, getState: any) => Promise<{ data: any }>;
     };
     useChannelMentions: boolean;
+    inputComponent?: ElementType;
+    openWhenEmpty?: boolean;
+    priorityProfiles?: UserProfile[];
 };
 
 export default class Textbox extends React.PureComponent<Props> {
@@ -66,6 +70,7 @@ export default class Textbox extends React.PureComponent<Props> {
         supportsCommands: true,
         isRHS: false,
         listenForMentionKeyClick: false,
+        inputComponent: AutosizeTextarea,
     };
 
     constructor(props: Props) {
@@ -75,11 +80,11 @@ export default class Textbox extends React.PureComponent<Props> {
             new AtMentionProvider({
                 currentUserId: this.props.currentUserId,
                 profilesInChannel: this.props.profilesInChannel,
-                profilesNotInChannel: this.props.profilesNotInChannel,
                 autocompleteUsersInChannel: (prefix: string) => this.props.actions.autocompleteUsersInChannel(prefix, this.props.channelId),
                 useChannelMentions: this.props.useChannelMentions,
                 autocompleteGroups: this.props.autocompleteGroups,
                 searchAssociatedGroupsForReference: (prefix: string) => this.props.actions.searchAssociatedGroupsForReference(prefix, this.props.currentTeamId, this.props.channelId),
+                priorityProfiles: this.props.priorityProfiles,
             }),
             new ChannelMentionProvider(props.actions.autocompleteChannels),
             new EmoticonProvider(),
@@ -87,8 +92,7 @@ export default class Textbox extends React.PureComponent<Props> {
 
         if (props.supportsCommands) {
             this.suggestionProviders.push(new CommandProvider({
-                channelId: this.props.channelId,
-                rootId: this.props.rootId,
+                isInRHS: Boolean(this.props.rootId),
             }));
         }
 
@@ -106,7 +110,6 @@ export default class Textbox extends React.PureComponent<Props> {
         if (this.props.channelId !== prevProps.channelId ||
             this.props.currentUserId !== prevProps.currentUserId ||
             this.props.profilesInChannel !== prevProps.profilesInChannel ||
-            this.props.profilesNotInChannel !== prevProps.profilesNotInChannel ||
             this.props.autocompleteGroups !== prevProps.autocompleteGroups) {
             // Update channel id for AtMentionProvider.
             const providers = this.suggestionProviders;
@@ -115,11 +118,11 @@ export default class Textbox extends React.PureComponent<Props> {
                     (providers[i] as AtMentionProvider).setProps({
                         currentUserId: this.props.currentUserId,
                         profilesInChannel: this.props.profilesInChannel,
-                        profilesNotInChannel: this.props.profilesNotInChannel,
                         autocompleteUsersInChannel: (prefix: string) => this.props.actions.autocompleteUsersInChannel(prefix, this.props.channelId),
                         useChannelMentions: this.props.useChannelMentions,
                         autocompleteGroups: this.props.autocompleteGroups,
                         searchAssociatedGroupsForReference: (prefix: string) => this.props.actions.searchAssociatedGroupsForReference(prefix, this.props.currentTeamId, this.props.channelId),
+                        priorityProfiles: this.props.priorityProfiles,
                     });
                 }
             }
@@ -157,6 +160,10 @@ export default class Textbox extends React.PureComponent<Props> {
 
     handleKeyDown = (e: KeyboardEvent) => {
         this.props.onKeyDown?.(e);
+    }
+
+    handleSelect = (e: React.SyntheticEvent) => {
+        this.props.onSelect?.(e);
     }
 
     handleMouseUp = (e: MouseEvent) => {
@@ -224,12 +231,14 @@ export default class Textbox extends React.PureComponent<Props> {
                     className='form-control custom-textarea textbox-preview-area'
                     onKeyPress={this.props.onKeyPress}
                     onKeyDown={this.handleKeyDown}
+                    onSelect={this.handleSelect}
                     onBlur={this.handleBlur}
                 >
                     <PostMarkdown
                         isRHS={this.props.isRHS}
                         message={this.props.value}
                         mentionKeys={[]}
+                        channelId={this.props.channelId}
                     />
                 </div>
             );
@@ -248,6 +257,7 @@ export default class Textbox extends React.PureComponent<Props> {
                     placeholder={this.props.createMessage}
                     onChange={this.handleChange}
                     onKeyPress={this.props.onKeyPress}
+                    onSelect={this.handleSelect}
                     onKeyDown={this.handleKeyDown}
                     onMouseUp={this.handleMouseUp}
                     onKeyUp={this.handleKeyUp}
@@ -255,7 +265,7 @@ export default class Textbox extends React.PureComponent<Props> {
                     onBlur={this.handleBlur}
                     onHeightChange={this.handleHeightChange}
                     style={{visibility: this.props.preview ? 'hidden' : 'visible'}}
-                    inputComponent={AutosizeTextarea}
+                    inputComponent={this.props.inputComponent}
                     listComponent={SuggestionList}
                     listStyle={this.props.suggestionListStyle}
                     providers={this.suggestionProviders}
@@ -267,6 +277,7 @@ export default class Textbox extends React.PureComponent<Props> {
                     contextId={this.props.channelId}
                     listenForMentionKeyClick={this.props.listenForMentionKeyClick}
                     wrapperHeight={wrapperHeight}
+                    openWhenEmpty={this.props.openWhenEmpty}
                 />
                 {preview}
             </div>

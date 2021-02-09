@@ -8,11 +8,12 @@ import ReactDOM from 'react-dom';
 import {FormattedMessage, injectIntl} from 'react-intl';
 import {PropTypes} from 'prop-types';
 import classNames from 'classnames';
+import throttle from 'lodash/throttle';
 
 import Scrollbars from 'react-custom-scrollbars';
 import {SpringSystem, MathUtil} from 'rebound';
 
-import {trackEvent} from 'actions/diagnostics_actions.jsx';
+import {trackEvent} from 'actions/telemetry_actions.jsx';
 import {redirectUserToDefaultTeam} from 'actions/global_actions';
 import * as ChannelUtils from 'utils/channel_utils.jsx';
 import {Constants, ModalIdentifiers, SidebarChannelGroups} from 'utils/constants';
@@ -25,7 +26,7 @@ import MoreChannels from 'components/more_channels';
 import MoreDirectChannels from 'components/more_direct_channels';
 import QuickSwitchModal from 'components/quick_switch_modal';
 import NewChannelFlow from 'components/new_channel_flow';
-import UnreadChannelIndicator from 'components/unread_channel_indicator';
+import UnreadChannelIndicator from 'components/sidebar/unread_channel_indicator';
 import Pluggable from 'plugins/pluggable';
 
 import SidebarHeader from './header';
@@ -171,10 +172,8 @@ class LegacySidebar extends React.PureComponent {
         this.closedDirectChannel = false;
 
         this.state = {
-            newChannelModalType: '',
             orderedChannelIds: props.orderedChannelIds,
             showDirectChannelsModal: false,
-            showMoreChannelsModal: false,
             showMorePublicChannelsModal: false,
             morePublicChannelsModalType: 'public',
         };
@@ -277,9 +276,9 @@ class LegacySidebar extends React.PureComponent {
         }
     }
 
-    onScroll = () => {
+    onScroll = throttle(() => {
         this.updateUnreadIndicators();
-    }
+    }, 100);
 
     handleScrollAnimationUpdate = (spring) => {
         const {scrollbar} = this.refs;
@@ -474,12 +473,12 @@ class LegacySidebar extends React.PureComponent {
     }
 
     showMoreChannelsModal = (type) => {
-        this.setState({showMoreChannelsModal: true, morePublicChannelsModalType: type});
+        this.props.actions.openModal({
+            modalId: ModalIdentifiers.MORE_CHANNELS,
+            dialogType: MoreChannels,
+            dialogProps: {morePublicChannelsModalType: type},
+        });
         trackEvent('ui', 'ui_channels_more_public');
-    }
-
-    hideMoreChannelsModal = () => {
-        this.setState({showMoreChannelsModal: false});
     }
 
     showNewPublicChannelModal = () => {
@@ -493,11 +492,11 @@ class LegacySidebar extends React.PureComponent {
     }
 
     showNewChannelModal = (type) => {
-        this.setState({newChannelModalType: type});
-    }
-
-    hideNewChannelModal = () => {
-        this.setState({newChannelModalType: ''});
+        this.props.actions.openModal({
+            modalId: ModalIdentifiers.NEW_CHANNEL_FLOW,
+            dialogType: NewChannelFlow,
+            dialogProps: {channelType: type},
+        });
     }
 
     showMoreDirectChannelsModal = () => {
@@ -621,15 +620,10 @@ class LegacySidebar extends React.PureComponent {
             currentUser,
             isOpen,
             isDataPrefechEnabled,
-            canCreatePublicChannel,
-            canCreatePrivateChannel,
         } = this.props;
 
         const {
-            newChannelModalType,
             showDirectChannelsModal,
-            showMoreChannelsModal,
-            morePublicChannelsModalType,
             showTopUnread,
             showBottomUnread,
         } = this.state;
@@ -645,22 +639,17 @@ class LegacySidebar extends React.PureComponent {
         this.firstUnreadChannel = null;
         this.lastUnreadChannel = null;
 
-        let showChannelModal = false;
-        if (newChannelModalType !== '') {
-            showChannelModal = true;
-        }
-
         const above = (
             <FormattedMessage
                 id='sidebar.unreads'
-                defaultMessage='More Unreads'
+                defaultMessage='More unreads'
             />
         );
 
         const below = (
             <FormattedMessage
                 id='sidebar.unreads'
-                defaultMessage='More Unreads'
+                defaultMessage='More unreads'
             />
         );
 
@@ -670,20 +659,6 @@ class LegacySidebar extends React.PureComponent {
                 <MoreDirectChannels
                     onModalDismissed={this.hideMoreDirectChannelsModal}
                     isExistingChannel={false}
-                />
-            );
-        }
-
-        let moreChannelsModal;
-        if (showMoreChannelsModal) {
-            moreChannelsModal = (
-                <MoreChannels
-                    onModalDismissed={this.hideMoreChannelsModal}
-                    handleNewChannel={() => {
-                        this.hideMoreChannelsModal();
-                        this.showNewChannelModal(Constants.OPEN_CHANNEL);
-                    }}
-                    morePublicChannelsModalType={morePublicChannelsModalType}
                 />
             );
         }
@@ -743,16 +718,8 @@ class LegacySidebar extends React.PureComponent {
                 aria-labelledby='sidebar-left'
             >
                 {isDataPrefechEnabled && <DataPrefetch/>}
-                <NewChannelFlow
-                    show={showChannelModal}
-                    canCreatePublicChannel={canCreatePublicChannel}
-                    canCreatePrivateChannel={canCreatePrivateChannel}
-                    channelType={this.state.newChannelModalType}
-                    onModalDismissed={this.hideNewChannelModal}
-                />
                 {morePublicDirectChannelsModal}
                 {moreDirectChannelsModal}
-                {moreChannelsModal}
 
                 <SidebarHeader/>
 

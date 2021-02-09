@@ -301,11 +301,8 @@ describe('Autocomplete with Elasticsearch - Users', () => {
 
             // # Create new channel and add user to channel
             const channelName = `new-channel-${timestamp}`;
-            cy.apiCreateChannel(testTeam.id, channelName, channelName).then((channelResponse) => {
-                const channel = channelResponse.body;
-
-                cy.apiGetUserByEmail(thor.email).then((emailResponse) => {
-                    const user = emailResponse.body;
+            cy.apiCreateChannel(testTeam.id, channelName, channelName).then(({channel}) => {
+                cy.apiGetUserByEmail(thor.email).then(({user}) => {
                     cy.apiAddUserToChannel(channel.id, user.id);
                 });
 

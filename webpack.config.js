@@ -209,6 +209,17 @@ var config = {
                 ],
             },
             {
+                test: /\.apng$/,
+                use: [
+                    {
+                        loader: 'file-loader',
+                        options: {
+                            name: 'files/[hash].[ext]',
+                        },
+                    },
+                ],
+            },
+            {
                 test: /\.html$/,
                 use: [
                     {
@@ -238,7 +249,7 @@ var config = {
             jquery: 'jquery/src/jquery',
             superagent: 'node_modules/superagent/lib/client',
         },
-        extensions: ['.js', '.jsx', '.ts', '.tsx'],
+        extensions: ['.ts', '.tsx', '.js', '.jsx'],
     },
     performance: {
         hints: 'warning',
@@ -264,7 +275,7 @@ var config = {
             meta: {
                 csp: {
                     'http-equiv': 'Content-Security-Policy',
-                    content: 'script-src \'self\' cdn.rudderlabs.com/' + CSP_UNSAFE_EVAL_IF_DEV,
+                    content: 'script-src \'self\' cdn.rudderlabs.com/ js.stripe.com/v3 ' + CSP_UNSAFE_EVAL_IF_DEV,
                 },
             },
         }),
@@ -279,6 +290,7 @@ var config = {
                 {from: 'images/warning.png', to: 'images'},
                 {from: 'images/logo-email.png', to: 'images'},
                 {from: 'images/browser-icons', to: 'images/browser-icons'},
+                {from: 'images/cloud', to: 'images'},
             ],
         }),
 
@@ -370,11 +382,15 @@ if (!DEV) {
 const env = {};
 if (DEV) {
     env.PUBLIC_PATH = JSON.stringify(publicPath);
+    env.RUDDER_KEY = JSON.stringify(process.env.RUDDER_KEY || ''); //eslint-disable-line no-process-env
+    env.RUDDER_DATAPLANE_URL = JSON.stringify(process.env.RUDDER_DATAPLANE_URL || ''); //eslint-disable-line no-process-env
     if (process.env.MM_LIVE_RELOAD) { //eslint-disable-line no-process-env
         config.plugins.push(new LiveReloadPlugin());
     }
 } else {
     env.NODE_ENV = JSON.stringify('production');
+    env.RUDDER_KEY = JSON.stringify(process.env.RUDDER_KEY || ''); //eslint-disable-line no-process-env
+    env.RUDDER_DATAPLANE_URL = JSON.stringify(process.env.RUDDER_DATAPLANE_URL || ''); //eslint-disable-line no-process-env
 }
 
 config.plugins.push(new webpack.DefinePlugin({

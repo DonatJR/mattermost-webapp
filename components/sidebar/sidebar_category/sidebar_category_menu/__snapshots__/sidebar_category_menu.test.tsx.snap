@@ -6,10 +6,22 @@ exports[`components/sidebar/sidebar_category/sidebar_category_menu should match 
     ariaLabel="Category Menu"
     buttonAriaLabel="Category Menu"
     id="SidebarCategoryMenu-category1"
-    onToggle={[Function]}
+    isMenuOpen={false}
+    onToggleMenu={[Function]}
     tooltipText="Category options"
   >
     <MenuGroup>
+      <MenuItemAction
+        icon={
+          <i
+            className="icon-bell-outline"
+          />
+        }
+        id="mute-category1"
+        onClick={[Function]}
+        show={true}
+        text="Mute Category"
+      />
       <MenuItemAction
         icon={
           <i
@@ -57,10 +69,23 @@ exports[`components/sidebar/sidebar_category/sidebar_category_menu should match 
     ariaLabel="Category Menu"
     buttonAriaLabel="Category Menu"
     id="SidebarCategoryMenu-category1"
-    onToggle={[Function]}
+    isMenuOpen={false}
+    onToggleMenu={[Function]}
     tooltipText="Category options"
   >
-    <MenuGroup />
+    <MenuGroup>
+      <MenuItemAction
+        icon={
+          <i
+            className="icon-bell-outline"
+          />
+        }
+        id="mute-category1"
+        onClick={[Function]}
+        show={true}
+        text="Mute Category"
+      />
+    </MenuGroup>
     <MenuGroup>
       <MenuItemAction
         icon={

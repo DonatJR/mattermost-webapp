@@ -7,23 +7,22 @@
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
 
+// Stage: @prod
 // Group: @channel_sidebar
-
-import {testWithConfig} from '../../support/hooks';
 
 import {getRandomId} from '../../utils';
 import {getAdminAccount} from '../../support/env';
 
 describe('Channel switching', () => {
-    testWithConfig({
-        ServiceSettings: {
-            ExperimentalChannelSidebarOrganization: 'default_on',
-        },
-    });
-
     const sysadmin = getAdminAccount();
 
     before(() => {
+        cy.apiUpdateConfig({
+            ServiceSettings: {
+                ExperimentalChannelSidebarOrganization: 'default_on',
+            },
+        });
+
         // # Login as test user and visit town-square
         cy.apiInitSetup({loginAfter: true}).then(({team}) => {
             cy.visit(`/${team.name}/channels/town-square`);
@@ -60,22 +59,19 @@ describe('Channel switching', () => {
         const teamName = `team-${getRandomId()}`;
         cy.createNewTeam(teamName, teamName);
 
+        // # Create a new channel
+        cy.getCurrentTeamId().then((teamId) => {
+            cy.apiCreateChannel(teamId, 'test-channel', 'Test Channel').then(({channel}) => {
+                // # Have another user post a message in the new channel
+                cy.reload();
+                cy.postMessageAs({sender: sysadmin, message: 'Test', channelId: channel.id});
+            });
+        });
+
         // * Verify that we've switched to the new team
         cy.get('#headerTeamName').should('contain', teamName);
 
         cy.getCurrentChannelId().as('townSquareId');
-
-        // # Create a new channel
-        cy.getCurrentTeamId().then((teamId) => {
-            cy.apiCreateChannel(teamId, 'test-channel', 'Test Channel').then((response) => {
-                expect(response.status).to.equal(201);
-
-                cy.wrap(response.body).as('testChannel');
-            });
-        });
-
-        // # Have another user post a message in the new channel
-        cy.get('@testChannel').then((testChannel) => cy.postMessageAs({sender: sysadmin, message: 'Test', channelId: testChannel.id}));
 
         // # Press alt + shift + up
         cy.get('body').type('{alt}{shift}', {release: false}).type('{uparrow}').type('{alt}{shift}', {release: true});

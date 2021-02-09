@@ -30,7 +30,7 @@
     left: 0;
     height: 100%;
     z-index: 16;
-    border-right: 1px solid var(--center-channel-color-20);
+    border-right: 1px solid rgba(var(--center-channel-color-rgb), 0.2);
 
     &.dragging {
         z-index: 14;
@@ -60,9 +60,14 @@
         height: calc(100% - #{$announcement-bar-height});
     }
 
+    body.announcement-banner-tall--fixed & {
+        height: calc(100% - 40px)
+    }
+
     .badge {
         display: inline-block;
         flex-shrink: 0;
+        margin-left: 6px;
         margin-right: 3px;
         padding: 0 6px;
         min-width: 22px;
@@ -77,11 +82,10 @@
         background: var(--mention-bg);
         -webkit-font-smoothing: subpixel-antialiased;
         -moz-osx-font-smoothing: grayscale;
-        margin-left: auto;
     }
 
     .a11y--focused {
-        box-shadow: inset 0 0 1px 3px var(--sidebar-text-50), inset 0 0 0 1px var(--sidebar-text) !important;
+        box-shadow: inset 0 0 1px 3px rgba(var(--sidebar-text-rgb), 0.5), inset 0 0 0 1px var(--sidebar-text) !important;
 
         .SidebarChannelGroupHeader_groupButton {
             background-color: inherit !important;
@@ -101,7 +105,7 @@
             color: var(--sidebar-header-text-color);
 
             .user__name {
-                color: var(--sidebar-header-text-color-80);
+                color: rgba(var(--sidebar-header-text-color-rgb), 0.8);
             }
 
             &:hover .user__name {
@@ -148,7 +152,7 @@
             vertical-align: middle;
             border: 0;
             background: rgba(255, 255, 255, 0.16);
-            color: var(--sidebar-text-72);
+            color: rgba(var(--sidebar-text-rgb), 0.72);
 
             &:hover:not(.disabled) {
                 color: var(--sidebar-text);
@@ -211,11 +215,11 @@
         background: rgba(255, 255, 255, 0.16);
         text-align: center;
         border-radius: 4px;
-        color: var(--sidebar-text-60);
+        color: rgba(var(--sidebar-text-rgb), 0.6);
         font-size: 16px;
     }
     .SidebarFilters .SidebarFilters_filterButton:hover {
-        color: var(--sidebar-text-80);
+        color: rgba(var(--sidebar-text-rgb), 0.8);
         background: rgba(255, 255, 255, 0.24);
     }
     .SidebarFilters .SidebarFilters_filterButton.active {
@@ -224,7 +228,7 @@
     }
 
     .SidebarFilters .SidebarFilters_filterTitle {
-        color: var(--sidebar-text-72);
+        color: rgba(var(--sidebar-text-rgb), 0.72);
         font-weight: 600;
         font-size: 10px;
         line-height: 12px;
@@ -257,7 +261,7 @@
 
             i {
                 font-size: 16px;
-                color: var(--center-channel-color-48);
+                color: rgba(var(--center-channel-color-rgb), 0.72);
                 line-height: 16px;
             }
         }
@@ -266,13 +270,12 @@
     .AddChannelDropdown_dropdownButton {
         padding: 0;
         margin-right: 16px;
-        margin-top: 6px;
+        margin-top: 7px;
         z-index: 1;
         background: transparent;
         border: none;
-        color: var(--sidebar-text-80);
-        font-size: 18px;
-        line-height: 16px;
+        color: rgba(var(--sidebar-text-rgb), 0.8);
+        font-size: 20px;
         height: 28px;
         width: 28px;
         border-radius: 4px;
@@ -289,7 +292,6 @@
     .SidebarMenu {
         height: 30px;
         opacity: 1;
-        margin-left: auto;
 
         .dropdown-menu {
             line-height: 20px;
@@ -306,7 +308,7 @@
 
             i {
                 font-size: 16px;
-                color: var(--center-channel-color-72);
+                color: rgba(var(--center-channel-color-rgb), 0.72);
                 line-height: 16px;
             }
         }
@@ -363,7 +365,7 @@
         z-index: 1;
         background: transparent;
         border: none;
-        color: var(--sidebar-text-60);
+        color: rgba(var(--sidebar-text-rgb), 0.6);
         font-size: 16px;
         line-height: 16px;
         border-radius: 4px;
@@ -380,70 +382,6 @@
 
     .SidebarMenu_menuButton:focus {
         outline-style: none;
-    }
-
-    .nav-pills__unread-indicator {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        position: absolute;
-        margin-left: 50%;
-        width: 188px;
-        font-size: 14px;
-        line-height: 28px;
-        text-align: center;
-        @include border-radius(14px);
-        z-index: 2;
-        cursor: pointer;
-        transform: translateX(-50%);
-        opacity: 0;
-        visibility: hidden;
-        background: var(--mention-bg);
-        color: var(--mention-color);
-
-        .icon {
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            margin-left: 5px;
-        }
-
-        body.enable-animations & {
-            @include transition-property(opacity, visibility);
-            @include transition-duration($transition-quick);
-            @include transition-delay(0s);
-            @include transition-timing-function(ease-in, step-end);
-        }
-
-        svg {
-            fill: var(--mention-color);
-        }
-    }
-
-    .nav-pills__unread-indicator-top {
-        top: 32px;
-
-        .icon {
-            svg {
-                @include transform(rotate(180deg));
-            }
-        }
-    }
-
-    .nav-pills__unread-indicator-bottom {
-        bottom: 16px;
-    }
-
-    .nav-pills__unread-indicator--visible {
-        opacity: 1;
-        visibility: visible;
-
-        body.enable-animations & {
-            @include transition-property(opacity, visibility);
-            @include transition-duration($transition-quick);
-            @include transition-delay(0s);
-            @include transition-timing-function(ease-out, step-start);
-        }
     }
 
     .SidebarNavContainer {
@@ -482,7 +420,7 @@
     }
 
     .SidebarCategory_newDropBox {
-        border: 1px dashed var(--sidebar-text-30);
+        border: 1px dashed rgba(var(--sidebar-text-rgb), 0.3);
         border-radius: 4px;
         margin: 0 16px;
         padding: 10px;
@@ -492,13 +430,13 @@
         > i {
             font-size: 18px;
             line-height: 16px;
-            color: var(--sidebar-text-60);
+            color: rgba(var(--sidebar-text-rgb), 0.6);
         }
 
         .SidebarCategory_newDropBox-label {
             font-size: 12px;
             line-height: 16px;
-            color: var(--sidebar-text-72);
+            color: rgba(var(--sidebar-text-rgb), 0.72);
             margin-left: 8px;
         }
 
@@ -577,7 +515,7 @@
         text-overflow: ellipsis;
         text-align: left;
         border: none;
-        color: var(--sidebar-text-60);
+        color: rgba(var(--sidebar-text-rgb), 0.6);
         top: 0;
         box-shadow: 0px 0px 0px 0px rgba(0, 0, 0, 0.33);
         transition: box-shadow 0.25s ease-in-out;
@@ -598,46 +536,56 @@
             display: none;
         }
 
-        &.draggingOverHeader:hover {
-            //background: radial-gradient(60.83% 3421.87% at 50% 50%, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 100%);
-            box-shadow: inset -1px 0 0 var(--sidebar-text-60), inset 0 -1px 0 var(--sidebar-text-60), inset 1px 0 0 var(--sidebar-text-60), inset 0 1px 0 var(--sidebar-text-60);
-            border-radius: 4px;
-
-            .SidebarChannelGroupHeader_groupButton {
-                background-color: inherit;
-            }
+        &.SidebarChannelGroupHeader--sticky {
+            position: sticky;
         }
 
+        &.muted {
+            .icon-chevron-down, .SidebarChannelGroupHeader_text {
+                opacity: 0.4;
+            }
+        }
     }
-    .SidebarChannelGroup .SidebarChannelGroupHeader_groupButton {
+
+    .SidebarChannelGroup:not(.dmCategory) .draggingOver .SidebarChannelGroupHeader:hover {
+        box-shadow: inset -1px 0 0 rgba(var(--sidebar-text-rgb), 0.60), inset 0 -1px 0 rgba(var(--sidebar-text-rgb), 0.6), inset 1px 0 0 rgba(var(--sidebar-text-rgb), 0.6), inset 0 1px 0 rgba(var(--sidebar-text-rgb), 0.6);
+        border-radius: 4px;
+
+        .SidebarChannelGroupHeader_groupButton {
+            background-color: inherit;
+        }
+    }
+
+    .SidebarChannelGroupHeader_groupButton {
         height: 32px;
         padding: 0;
         font-size: 12px;
         font-family: 'Open Sans', sans-serif;
         font-weight: 600;
         text-transform: uppercase;
-        overflow: hidden;
-        text-overflow: ellipsis;
         white-space: nowrap;
         text-align: left;
         border: none;
-        color: var(--sidebar-text-60);
+        color: rgba(var(--sidebar-text-rgb), 0.6);
         background-color: var(--sidebar-bg);
-        position: sticky;
         top: 0;
         box-shadow: 0px 0px 0px 0px rgba(0, 0, 0, 0.33);
         transition: box-shadow 0.25s ease-in-out;
         z-index: 1;
         display: flex;
-        width: 100%;
+        flex: 1 1 auto;
+        min-width: 0;
         align-items: center;
 
-        > div:not(.SidebarCategory_newLabel) {
+        .emoji {
+            color: var(--sidebar-text);
+        }
+
+        .SidebarChannelGroupHeader_text {
             flex: 0 1 auto;
             overflow: hidden;
             text-overflow: ellipsis;
             width: 100%;
-            cursor: pointer;
         }
 
         &.dragging {
@@ -653,6 +601,15 @@
                 visibility: hidden;
             }
         }
+    }
+
+    .SidebarChannelGroupHeader--static {
+        margin-left: 16px;
+    }
+
+    button.SidebarChannelGroupHeader_groupButton > div {
+        // This overrides react-beautiful-dnd's grab cursor
+        cursor: pointer;
     }
 
     .SidebarChannelGroup.menuIsOpen ~ .SidebarChannelGroup .SidebarChannelGroupHeader_groupButton {
@@ -718,14 +675,15 @@
         animation-timing-function: linear;
     }
 
-    .SidebarChannelGroup .draggingOverDMCategory {
-        box-shadow: inset -1px 0 0 var(--sidebar-text-60), inset 0 -1px 0 var(--sidebar-text-60), inset 1px 0 0 var(--sidebar-text-60), inset 0 1px 0 var(--sidebar-text-60);
+    .SidebarChannelGroup.dmCategory .draggingOver {
+        box-shadow: inset -1px 0 0 rgba(var(--sidebar-text-rgb), 0.6), inset 0 -1px 0 rgba(var(--sidebar-text-rgb), 0.6), inset 1px 0 0 rgba(var(--sidebar-text-rgb), 0.6), inset 0 1px 0 rgba(var(--sidebar-text-rgb), 0.6);
         border-radius: 4px;
 
         .SidebarChannelGroupHeader_groupButton {
             background-color: inherit;
         }
     }
+
     .SidebarChannelGroup.capture .SidebarChannelGroup_content {
         margin-bottom: 0;
         padding-bottom: 14px;
@@ -736,7 +694,7 @@
         z-index: 1;
         background: transparent;
         border: none;
-        color: var(--sidebar-text-64);
+        color: rgba(var(--sidebar-text-rgb), 0.64);
         font-size: 18px;
         line-height: 16px;
         height: 28px;
@@ -759,7 +717,7 @@
         z-index: 1;
         background: transparent;
         border: none;
-        color: var(--sidebar-text-64);
+        color: rgba(var(--sidebar-text-rgb), 0.64);
         font-size: 16px;
         line-height: 16px;
         height: 28px;
@@ -806,7 +764,7 @@
         height: 32px; /* height required for transition animation */
         list-style-type: none;
         /* border: solid 2px transparent; */
-        color: var(--sidebar-text-60);
+        color: rgba(var(--sidebar-text-rgb), 0.6);
 
         &:hover {
             .btn-close {
@@ -835,6 +793,11 @@
             transform: none !important;
         }
 
+        &.selectedDragging {
+            opacity: 0.25;
+            transition: 'all cubic-bezier(.2,1,.1,1) 0.33s';
+        }
+
         .btn-close {
             @include opacity(0);
             visibility: hidden;
@@ -856,7 +819,25 @@
         .SidebarMenu_menuButton {
             height: 28px;
             width: 28px;
-            margin-top: -7px;
+        }
+
+        .SidebarChannel__selectedCount {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            height: 25px;
+            background: var(--center-channel-color);
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.12);
+            border-radius: 20px;
+            padding: 2px 9px 7px 9px;
+
+
+            > span {
+                font-weight: 600;
+                font-size: 12px;
+                line-height: 11px;
+                color: var(--center-channel-bg);
+            }
         }
     }
 
@@ -897,14 +878,17 @@
         text-decoration: none;
         padding: 7px 16px 7px 14px;
         display: flex;
-        color: var(--sidebar-text-60);
-        align-items: flex-start;
+        color: rgba(var(--sidebar-text-rgb), 0.6);
+        align-items: center;
         margin-right: 0;
         width: 100%;
         border-top: 0;
         border-bottom: 0;
         height: 32px;
 
+        .emoji {
+            color: var(--sidebar-text);
+        }
 
         &.muted {
             div.SidebarChannelLinkLabel_wrapper, > i, .status.status--group, .badge {
@@ -921,7 +905,8 @@
         outline-style: none;
     }
 
-    .SidebarChannel .SidebarLink:hover {
+    .SidebarChannel .SidebarLink:hover,
+    .SidebarChannel .SidebarLink.menuOpen {
         background: rgba(255, 255, 255, 0.08);
 
         padding-right: 5px;
@@ -948,6 +933,23 @@
             color: var(--sidebar-text);
         }
 
+        &.selected {
+            background: rgba(var(--sidebar-text-active-border-rgb), 0.56);
+
+            &:hover {
+                background: rgba(var(--sidebar-text-active-border-rgb), 0.72);
+            }
+        }
+
+    }
+
+    .SidebarLink.selected {
+        background: rgba(var(--sidebar-text-active-border-rgb), 0.56);
+        color: rgba(var(--sidebar-text-rgb), 1);
+
+        &:hover {
+            background: rgba(var(--sidebar-text-active-border-rgb), 0.72);
+        }
     }
 
     .SidebarChannel.active .SidebarLink::before {
@@ -957,7 +959,7 @@
         left: -2px;
         top: 0;
         width: 4px;
-        background: var(--sidebar-text);
+        background: var(--sidebar-text-active-border);
         border-radius: 4px;
     }
 
@@ -967,8 +969,9 @@
         color: var(--sidebar-unread-text);
     }
     .SidebarChannel .SidebarLink > i {
-        font-size: 12px;
-        margin-right: 5px;
+        font-size: 14.4px;
+        margin: 0 5px 0 0;
+        display: flex;
     }
 
     .SidebarChannel span.SidebarChannelLinkLabel {
@@ -982,6 +985,7 @@
     .SidebarChannelLinkLabel_wrapper {
         overflow: hidden;
         display: flex;
+        flex-grow: 1;
 
         > span {
             text-overflow: ellipsis;
@@ -1035,10 +1039,12 @@
     }
 
     .status.status--group {
-        background: var(--sidebar-text-16);
-        margin: 3px 7px 0 1px;
-        min-width: 14px;
+        background: rgba(var(--sidebar-text-rgb), 0.16);
+        margin: 0 8px 0 3px;
+        width: 14px;
         height: 14px;
+        flex-shrink: 0;
+        font-size: 11px;
     }
 
     .status-away {
