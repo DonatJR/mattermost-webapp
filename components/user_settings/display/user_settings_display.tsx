@@ -91,7 +91,7 @@ type Props = {
     collapseDisplay: string;
     linkPreviewDisplay: string;
     actions: {
-        savePreferences: (userId: string, preferences: Array<PreferenceType>) => void;
+        savePreferences: (userId: string, preferences: PreferenceType[]) => void;
         getSupportedTimezones: () => void;
         autoUpdateTimezone: (deviceTimezone: string) => void;
     };
@@ -611,7 +611,6 @@ export default class UserSettingsDisplay extends React.PureComponent<Props, Stat
                     <div>
                         <ManageTimezones
                             user={this.props.user}
-                            timezones={this.props.timezones}
                             useAutomaticTimezone={Boolean(userTimezone.useAutomaticTimezone)}
                             automaticTimezone={userTimezone.automaticTimezone}
                             manualTimezone={userTimezone.manualTimezone}

@@ -1,6 +1,7 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
+/* eslint-disable max-lines */
 import {batchActions} from 'redux-batched-actions';
 import {
     ChannelTypes,
@@ -26,7 +27,7 @@ import {
     markChannelAsRead,
     getChannelMemberCountsByGroup,
 } from 'mattermost-redux/actions/channels';
-import {getCloudSubscription} from 'mattermost-redux/actions/cloud';
+import {getCloudSubscription, getSubscriptionStats} from 'mattermost-redux/actions/cloud';
 import {loadRolesIfNeeded} from 'mattermost-redux/actions/roles';
 import {setServerVersion} from 'mattermost-redux/actions/general';
 import {
@@ -67,7 +68,7 @@ import {syncPostsInChannel} from 'actions/views/channel';
 
 import {browserHistory} from 'utils/browser_history';
 import {loadChannelsForCurrentUser} from 'actions/channel_actions.jsx';
-import {redirectUserToDefaultTeam} from 'actions/global_actions.jsx';
+import {redirectUserToDefaultTeam} from 'actions/global_actions';
 import {handleNewPost} from 'actions/post_actions.jsx';
 import * as StatusActions from 'actions/status_actions.jsx';
 import {loadProfilesForSidebar} from 'actions/user_actions.jsx';
@@ -1339,15 +1340,17 @@ function handleSidebarCategoryOrderUpdated(msg) {
     return receivedCategoryOrder(msg.broadcast.team_id, msg.data.order);
 }
 
-function handleUserActivationStatusChange() {
+export function handleUserActivationStatusChange() {
     return (doDispatch, doGetState) => {
         const state = doGetState();
         const license = getLicense(state);
 
         // This event is fired when a user first joins the server, so refresh analytics to see if we're now over the user limit
-        if (license.Cloud === 'true' && isCurrentUserSystemAdmin(state)
-        ) {
-            doDispatch(getStandardAnalytics());
+        if (license.Cloud === 'true') {
+            if (isCurrentUserSystemAdmin(state)) {
+                doDispatch(getStandardAnalytics());
+            }
+            doDispatch(getSubscriptionStats());
         }
     };
 }

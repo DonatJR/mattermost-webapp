@@ -92,14 +92,14 @@ const makeMapStateToProps = () => {
     };
 };
 
-const filterGroupChannels = memoizeResult((channels: Array<{profiles: Array<UserProfile>} & Channel>, term: string) => {
+const filterGroupChannels = memoizeResult((channels: Array<{profiles: UserProfile[]} & Channel>, term: string) => {
     return channels.filter((channel) => {
         const matches = filterProfilesStartingWithTerm(channel.profiles, term);
         return matches.length > 0;
     });
 });
 
-const filterDirectChannels = memoizeResult((channels: Channel[], userId: string) => {
+const filterDirectChannels = memoizeResult((channels: Record<string, Channel>, userId: string) => {
     return Object.values(channels).filter((channel) => {
         if (channel.type !== 'D') {
             return false;

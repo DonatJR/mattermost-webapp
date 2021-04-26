@@ -7,14 +7,17 @@
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
 
-// Group: @account_setting
+// Stage: @prod
+// Group: @account_setting @not_cloud
 
 describe('Account Settings > Sidebar > Channel Switcher', () => {
     before(() => {
-        // # Update config and visit town-square channel
+        cy.shouldNotRunOnCloudEdition();
+
+        // # Update config
         cy.apiUpdateConfig({
             ServiceSettings: {
-                ExperimentalChannelSidebarOrganization: 'disabled',
+                EnableLegacySidebar: true,
             },
         });
 
